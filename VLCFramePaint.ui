@@ -1,0 +1,25 @@
+<UI version="4.0" >
+ <class>VLCFramePaintClass</class>
+ <widget class="QWidget" name="VLCFramePaintClass" >
+  <property name="objectName" >
+   <string notr="true">VLCFramePaintClass</string>
+  </property>
+  <property name="geometry" >
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>600</width>
+    <height>400</height>
+   </rect>
+  </property>
+  <property name="windowTitle" >
+   <string>VLCFramePaint</string>
+  </property>
+ </widget>
+ <layoutDefault spacing="6" margin="11" />
+ <pixmapfunction></pixmapfunction>
+ <resources>
+   <include location="VLCFramePaint.qrc"/>
+ </resources>
+ <connections/>
+</UI>
