@@ -7,7 +7,6 @@ Widget::Widget(QWidget *parent) :
 {
     ui->setupUi(this);
     player = new VlcPlayerWidget;
-    player->setGeometry(0, 0, 960, 540);
     player->show();
     on_pushButton_clicked();
 }

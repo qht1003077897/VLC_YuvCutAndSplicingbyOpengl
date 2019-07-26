@@ -5,7 +5,7 @@
 #include "I420Image.h"
 #include <assert.h>
 #include <thread>
-
+#include <QMutex>
 struct libvlc_media_track_info_t;
 struct libvlc_media_t;
 struct libvlc_instance_t;
@@ -13,6 +13,35 @@ struct libvlc_media_player_t;
 struct libvlc_event_t;
 
 class context;
+struct DstData
+{
+    int dstW;
+    int dstH;
+    uint8_t *data;
+};
+
+//矩形区域信息
+struct Layout
+{
+    int x;
+    int y;
+    int width;
+    int height;
+};
+
+enum EnumOrientation
+{
+    HORIZONTAL,//水平打折
+    VERTICAL/*垂直打折*/
+};
+
+struct Fold {
+    bool enable = false;
+    int count = 1;
+    EnumOrientation orientation = HORIZONTAL;
+    std::vector<Layout> layoutItemns;
+};
+
 
 class VlcPlayerWidget : public QOpenGLWidget, public QOpenGLFunctions_2_0 //, public Player
 {
@@ -28,7 +57,7 @@ public:
     void pause();
     void stop();
 //public slots:
-//    void slotdraw(int desW, int desH);
+//    void slotupdate();
 //signals:
 //    void signaldraw(int desW, int desH);
 public:
@@ -50,6 +79,9 @@ protected:
 
 
 private:
+    int widgetWidth = 0;
+    int widgetHeight = 0;
+    std::vector<uint8_t*> dstList;
     uint8_t *des = nullptr;
     uint8_t *dstLeft = nullptr;
     uint8_t *dstRight = nullptr;
@@ -65,11 +97,11 @@ private:
     QMatrix4x4 mView;
     QMatrix4x4 mWorld;
 private:
+    Fold m_fold;
     libvlc_instance_t* m_vlc;
     libvlc_media_player_t *m_vlcplayer;
     I420Image *m_Front;
     I420Image *m_Back;
-
 private:
     QString m_input;
 };

@@ -8,9 +8,12 @@ typedef SSIZE_T ssize_t;
 #include <QPainter>
 #include <QOpenGLFunctions_2_0>
 #include <QDebug>
+#include "QTimer"
+#include <math.h>
 
 #define ATTRIB_VERTEX 3
 #define ATTRIB_TEXTURE 4
+
 
 VlcPlayerWidget::VlcPlayerWidget(QWidget *parent) :
     QOpenGLWidget(parent),
@@ -19,20 +22,50 @@ VlcPlayerWidget::VlcPlayerWidget(QWidget *parent) :
     m_Front(NULL),
     m_Back(NULL)
 {
-    const char* vlc_args[32] = {};
-    int vlc_args_num = 0;
-    vlc_args[vlc_args_num++] = "--network-caching=200";
-    vlc_args[vlc_args_num++] = "--file-logging";
-    vlc_args[vlc_args_num++] = "--logfile=D:/vlc.log";
-    vlc_args[vlc_args_num++] = "--log-verbose=2";
-    vlc_args[vlc_args_num++] = "--logmode=text";
-    m_vlc = libvlc_new(vlc_args_num, vlc_args);
-    //m_vlc = libvlc_new(0, 0);
+   setGeometry(0, 0, 800, 800);
+
+
+    m_fold.count = 2;
+    m_fold.enable = true;
+    m_fold.orientation = HORIZONTAL;
+    Layout layout1;
+    layout1.x = 0;
+    layout1.y = 0;
+    layout1.width = 400;
+    layout1.height = 800;
+
+    Layout layout2;
+    layout2.x = 0;
+    layout2.y = 800;
+    layout2.width = 400;
+    layout2.height = 800;
+
+    Layout layout3;
+    //layout3.x = 0;
+    //layout3.y = 1600;
+    //layout3.width = 400;
+    //layout3.height = 800;
+    std::vector<Layout> vectors;
+    vectors.push_back(layout1);
+    vectors.push_back(layout2);
+    //vectors.push_back(layout3);
+    m_fold.layoutItemns = vectors;
+
+
+
+    //const char* vlc_args[32] = {};
+    //int vlc_args_num = 0;
+    //vlc_args[vlc_args_num++] = "--network-caching=200";
+    ////vlc_args[vlc_args_num++] = "--file-logging";
+    ////vlc_args[vlc_args_num++] = "--logfile=D:/vlc.log";
+    ////vlc_args[vlc_args_num++] = "--log-verbose=2";
+    ////vlc_args[vlc_args_num++] = "--logmode=text";
+    //m_vlc = libvlc_new(vlc_args_num, vlc_args);
+    m_vlc = libvlc_new(0, 0);
 
     m_vlcplayer = libvlc_media_player_new(m_vlc);
     libvlc_video_set_callbacks(m_vlcplayer, lock_cb, unlock_cb, display_cb, this);
     libvlc_video_set_format_callbacks(m_vlcplayer, setup_cb, cleanup_cb);
-    ////connect(this, &VlcPlayerWidget::signaldraw, this, &VlcPlayerWidget::slotdraw);
 }
 
 VlcPlayerWidget::~VlcPlayerWidget()
@@ -48,16 +81,17 @@ void VlcPlayerWidget::setInput(QString input)
 
 void VlcPlayerWidget::play()
 {
+    widgetWidth = this->width();
+    widgetHeight = this->height();
     stop();
     libvlc_media_t *pmedia = libvlc_media_new_location(m_vlc, m_input.toLocal8Bit().data());
 
-    //libvlc_media_add_option(pmedia, ":rtsp-tcp=true");
-    //libvlc_media_add_option(pmedia, ":network-caching=300");
+    libvlc_media_add_option(pmedia, ":rtsp-tcp=true");
+    libvlc_media_add_option(pmedia, ":network-caching=300");
     libvlc_media_player_set_media(m_vlcplayer, pmedia);
     libvlc_media_player_play(m_vlcplayer);
 
     libvlc_media_release(pmedia);
-
 }
 
 void VlcPlayerWidget::pause()
@@ -87,12 +121,12 @@ void VlcPlayerWidget::stop()
 
 void *VlcPlayerWidget::lock_cb(void *opaque, void **planes)
 {
+
     VlcPlayerWidget *pthis = static_cast<VlcPlayerWidget*>(opaque);
 
     planes[0] = pthis->m_Back->GetY();
     planes[1] = pthis->m_Back->GetU();
     planes[2] = pthis->m_Back->GetV();
-
 
     return pthis->m_Back;
 }
@@ -104,13 +138,11 @@ void VlcPlayerWidget::unlock_cb(void *opaque, void *picture, void * const *plane
     I420Image* p = pthis->m_Front;
     pthis->m_Front = pthis->m_Back;
     pthis->m_Back = p;
-
 }
 
 void VlcPlayerWidget::display_cb(void *opaque, void *picture)
 {
     VlcPlayerWidget *pthis = static_cast<VlcPlayerWidget*>(opaque);
-
     pthis->update();
 }
 
@@ -191,70 +223,90 @@ static const GLfloat textureVertices[] = {
 
 void VlcPlayerWidget::paintGL()
 {
-
     // 清除缓冲区
     glClearColor(0.0, 0.0, 0.0, 0.0);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    if (m_Front)
-    {
-        int w = m_Front->GetWidth();
-        int h = m_Front->GetHeight();
-        int desW = w / 2;
-        int desH = h;
-        des = m_Front->GetY();
+        if (m_Front)
+        {
+            des = m_Front->GetY();
+            int w = m_Front->GetWidth();
+            int h = m_Front->GetHeight();
+            int size = m_fold.layoutItemns.size();
+            double Video2WidgetRation_W = (double)w / (double)widgetWidth;
+            double Video2WidgetRation_H = (double)h / (double)widgetHeight;
+            if (0 == dstList.size())
+            {
+                for (int i = 0; i < size; i++)
+                {
+                    double si= (w * h + w * h / 2) / size;
+                    int s = ceil(si);
+                    uint8_t *dst = new uint8_t[ceil((w * h + w * h / 2) / size)];
+                    dstList.push_back(dst);
+                }
+                dstTotal = new uint8_t[(w * h + w * h / 2)];
+            }
+#pragma region  按打折数裁剪视频   
+            
+            int blockX = 0; // 裁剪前每块的X偏移量
+            int index = 0;
+             for (auto layout : m_fold.layoutItemns)
+            {
+                if (0 != index)
+                {
+                    blockX += (m_fold.layoutItemns.at(index - 1).width) * Video2WidgetRation_W;
+                }
+                Cut_I420(
+                    des,
+                    blockX,                                                             // 裁剪目标块X偏移()
+                    0,                                                                  // 裁剪目标块y偏移（后续支持XY偏移量之后更改此参数即可）
+                    w, h,                                                               // 视频源宽高
+                    dstList.at(index),
+                    m_fold.layoutItemns.at(index).width * Video2WidgetRation_W,
+                    m_fold.layoutItemns.at(index).height * Video2WidgetRation_H);           //裁剪目标宽高
+                index++;
+            }
+#pragma endregion
 
-        dstLeft = new uint8_t[(w * h + w * h / 2) / 2];
-        dstRight = new uint8_t[(w * h + w * h / 2) / 2];
-        dstTotal = new uint8_t[(w* h + w * h / 2)];
-        Cut_I420(des, 0, 0, w, h, dstLeft, desW, desH);
-        Cut_I420(des, desW, 0, w, h, dstRight, desW, desH);
-        Ver_Con_2(dstLeft, dstRight, desW, desH, dstTotal);
-        //烤鸭 3840*2160
+#pragma region  将裁剪好的视频块进行竖向拼接  
+             index = 0;
+             for (auto layout : m_fold.layoutItemns) 
+             {
+                 Ver_Con_2(
+                     dstList.at(0), dstList.at(1),
+                     m_fold.layoutItemns.at(0).width * Video2WidgetRation_W,
+                     m_fold.layoutItemns.at(0).height * Video2WidgetRation_H,
+                     dstTotal);
+                 index++;
+             }
+#pragma endregion
 
+            int desW = m_fold.layoutItemns.at(0).width * Video2WidgetRation_W;
+            int desH = m_fold.layoutItemns.at(0).height * Video2WidgetRation_H;
          /*Y*/
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, tex_y);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, desW , desH*2, 0, GL_RED, GL_UNSIGNED_BYTE, (GLvoid*)dstTotal);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, desW, desH * 2 , 0, GL_RED, GL_UNSIGNED_BYTE, (GLvoid*)dstTotal);
         glUniform1i(sampler_y, 0);
 
          /*U*/
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, tex_u);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, desW / 2, desH, 0, GL_RED, GL_UNSIGNED_BYTE, (GLvoid*)(dstTotal + desW * desH * 2));
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, desW / 2, desH, 0, GL_RED, GL_UNSIGNED_BYTE, (GLvoid*)(dstTotal + desW * desH * 2 ));
         glUniform1i(sampler_u, 1);
 
         /* V*/
         glActiveTexture(GL_TEXTURE2);
         glBindTexture(GL_TEXTURE_2D, tex_v);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, desW / 2, desH, 0, GL_RED, GL_UNSIGNED_BYTE, (GLvoid*)(dstTotal + desW * desH * 2 + desW * desH * 2 / 4));
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, desW / 2, desH, 0, GL_RED, GL_UNSIGNED_BYTE, (GLvoid*)(dstTotal + desW * desH * 2  + desW * desH * 2 / 4));
         glUniform1i(sampler_v, 2);
 
-
-        /*       QOpenGLShaderProgram::setUniformValue();*/
         glUniformMatrix4fv(matWorld, 1, GL_FALSE, mWorld.constData());
         glUniformMatrix4fv(matView, 1, GL_FALSE, mView.constData());
         glUniformMatrix4fv(matProj, 1, GL_FALSE, mProj.constData());
 
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-        //glFlush();
-
-        if (dstLeft)
-        {
-            delete []dstLeft;
-            dstLeft = nullptr;
-        }
-
-        if (dstRight)
-        {
-            delete []dstRight;
-            dstRight = nullptr;
-        }
-        if (dstTotal)
-        {
-            delete[]dstTotal;
-            dstTotal = nullptr;
-        } 
+        glFlush();
     }
 }
 
@@ -361,7 +413,6 @@ void VlcPlayerWidget::InitShaders()
     matView = glGetUniformLocation(program, "mView");
     matProj = glGetUniformLocation(program, "mProj");
 }
-
 
 // YV12和I420裁剪时交换UV分量位置
 void VlcPlayerWidget:: Cut_I420(uint8_t* Src, int x, int y, int srcWidth, int srcHeight, uint8_t* Dst, int desWidth, int desHeight)//图片按位置裁剪  

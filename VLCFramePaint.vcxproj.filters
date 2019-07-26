@@ -33,9 +33,6 @@
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="VLCFramePaint.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="widget.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -69,9 +66,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="I420Image.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="VLCFramePaint.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

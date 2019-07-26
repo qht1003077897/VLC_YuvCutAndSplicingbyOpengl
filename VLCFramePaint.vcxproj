@@ -119,11 +119,7 @@
   <ItemGroup>
     <ClCompile Include="main.cpp" />
     <ClCompile Include="vlcplayerwidget.cpp" />
-    <ClCompile Include="VLCFramePaint.cpp" />
     <ClCompile Include="widget.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="VLCFramePaint.h" />
   </ItemGroup>
   <ItemGroup>
     <QtUic Include="VLCFramePaint.ui" />
