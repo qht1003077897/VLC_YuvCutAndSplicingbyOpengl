@@ -94,7 +94,8 @@ private:
     void InitShaders();
     void Cut_I420(uint8_t * Src, int x, int y, int srcWidth, int srcHeight, uint8_t *Dst, int desWidth, int desHeight);
     void Ver_Con_2(uint8_t * Src1, uint8_t * Src2, int dstW, int dstH, uint8_t * Dst);
-    void connectI420(std::vector<DstData> disList, uint8_t * Dst);
+    void connectI420Ver(std::vector<DstData> disList, uint8_t * Dst);
+	void connectI420Hon(std::vector<DstData> disList, uint8_t * Dst);
 	void initializeArrays(int w, int h);
     void cutByfondCount(int w, int h);
     GLuint program;
