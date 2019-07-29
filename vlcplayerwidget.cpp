@@ -10,6 +10,7 @@ typedef SSIZE_T ssize_t;
 #include <QDebug>
 #include "QTimer"
 #include <math.h>
+#include <iostream>
 
 #define ATTRIB_VERTEX 3
 #define ATTRIB_TEXTURE 4
@@ -22,33 +23,40 @@ VlcPlayerWidget::VlcPlayerWidget(QWidget *parent) :
     m_Front(NULL),
     m_Back(NULL)
 {
-   setGeometry(0, 0, 800, 800);
-
-
-    m_fold.count = 2;
+   setGeometry(0, 0, 600, 1080);
+   this->setWindowFlag(Qt::FramelessWindowHint);
+   this->setWindowFlags(this->windowFlags() | Qt::WindowStaysOnTopHint);
+    m_fold.count = 3;
     m_fold.enable = true;
-    m_fold.orientation = HORIZONTAL;
+    m_fold.orientation = VERTICAL;
     Layout layout1;
     layout1.x = 0;
     layout1.y = 0;
-    layout1.width = 400;
-    layout1.height = 800;
+    layout1.width = 125;
+    layout1.height = 1080;
 
     Layout layout2;
     layout2.x = 0;
     layout2.y = 800;
-    layout2.width = 400;
-    layout2.height = 800;
+    layout2.width = 125;
+    layout2.height = 1080;
 
     Layout layout3;
-    //layout3.x = 0;
-    //layout3.y = 1600;
-    //layout3.width = 400;
-    //layout3.height = 800;
+    layout3.x = 0;
+    layout3.y = 1600;
+    layout3.width = 125;
+    layout3.height = 1080;
+
+    Layout layout4;
+    layout4.x = 0;
+    layout4.y = 2400;
+    layout4.width = 125;
+    layout4.height = 1080;
     std::vector<Layout> vectors;
     vectors.push_back(layout1);
     vectors.push_back(layout2);
-    //vectors.push_back(layout3);
+    vectors.push_back(layout3);
+    vectors.push_back(layout4);
     m_fold.layoutItemns = vectors;
 
 
@@ -116,6 +124,12 @@ void VlcPlayerWidget::stop()
         delete m_Back;
         m_Back = NULL;
     }
+    for (auto XSXX : dstList)
+    {
+        delete XSXX;
+        XSXX = nullptr;
+    }
+    dstList.clear();
 }
 
 
@@ -230,77 +244,25 @@ void VlcPlayerWidget::paintGL()
         if (m_Front)
         {
             des = m_Front->GetY();
+#ifdef QT_NO_DEBUG 
+            // release 发布时避免第一帧无数据红屏
+            if (*des == '\0')
+            {
+                qDebug() << "data frame  Uninitialized completion  return";
+                return;
+            }
+#endif
             int w = m_Front->GetWidth();
             int h = m_Front->GetHeight();
-            int size = m_fold.layoutItemns.size();
-            double Video2WidgetRation_W = (double)w / (double)widgetWidth;
-            double Video2WidgetRation_H = (double)h / (double)widgetHeight;
-            if (0 == dstList.size())
+            if (0 == Video2WidgetRation_W || 0 == Video2WidgetRation_H)
             {
-                for (int i = 0; i < size; i++)
-                {
-                    double si= (w * h + w * h / 2) / size;
-                    int s = ceil(si);
-                    uint8_t *dst = new uint8_t[ceil((w * h + w * h / 2) / size)];
-                    dstList.push_back(dst);
-                }
-                dstTotal = new uint8_t[(w * h + w * h / 2)];
+                 Video2WidgetRation_W = (double)w / widgetWidth;
+                 Video2WidgetRation_H = (double)h / widgetHeight;
             }
-#pragma region  按打折数裁剪视频   
-            
-            int blockX = 0; // 裁剪前每块的X偏移量
-            int index = 0;
-             for (auto layout : m_fold.layoutItemns)
-            {
-                if (0 != index)
-                {
-                    blockX += (m_fold.layoutItemns.at(index - 1).width) * Video2WidgetRation_W;
-                }
-                Cut_I420(
-                    des,
-                    blockX,                                                             // 裁剪目标块X偏移()
-                    0,                                                                  // 裁剪目标块y偏移（后续支持XY偏移量之后更改此参数即可）
-                    w, h,                                                               // 视频源宽高
-                    dstList.at(index),
-                    m_fold.layoutItemns.at(index).width * Video2WidgetRation_W,
-                    m_fold.layoutItemns.at(index).height * Video2WidgetRation_H);           //裁剪目标宽高
-                index++;
-            }
-#pragma endregion
-
-#pragma region  将裁剪好的视频块进行竖向拼接  
-             index = 0;
-             for (auto layout : m_fold.layoutItemns) 
-             {
-                 Ver_Con_2(
-                     dstList.at(0), dstList.at(1),
-                     m_fold.layoutItemns.at(0).width * Video2WidgetRation_W,
-                     m_fold.layoutItemns.at(0).height * Video2WidgetRation_H,
-                     dstTotal);
-                 index++;
-             }
-#pragma endregion
-
-            int desW = m_fold.layoutItemns.at(0).width * Video2WidgetRation_W;
-            int desH = m_fold.layoutItemns.at(0).height * Video2WidgetRation_H;
-         /*Y*/
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, tex_y);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, desW, desH * 2 , 0, GL_RED, GL_UNSIGNED_BYTE, (GLvoid*)dstTotal);
-        glUniform1i(sampler_y, 0);
-
-         /*U*/
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, tex_u);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, desW / 2, desH, 0, GL_RED, GL_UNSIGNED_BYTE, (GLvoid*)(dstTotal + desW * desH * 2 ));
-        glUniform1i(sampler_u, 1);
-
-        /* V*/
-        glActiveTexture(GL_TEXTURE2);
-        glBindTexture(GL_TEXTURE_2D, tex_v);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, desW / 2, desH, 0, GL_RED, GL_UNSIGNED_BYTE, (GLvoid*)(dstTotal + desW * desH * 2  + desW * desH * 2 / 4));
-        glUniform1i(sampler_v, 2);
-
+            initializeArrays(w, h);
+            cutByfondCount(w, h);
+			jointVideo();
+			drawFrame();
         glUniformMatrix4fv(matWorld, 1, GL_FALSE, mWorld.constData());
         glUniformMatrix4fv(matView, 1, GL_FALSE, mView.constData());
         glUniformMatrix4fv(matProj, 1, GL_FALSE, mProj.constData());
@@ -308,6 +270,112 @@ void VlcPlayerWidget::paintGL()
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
         glFlush();
     }
+}
+
+void VlcPlayerWidget::drawFrame()
+{
+	if (EnumOrientation::VERTICAL == m_fold.orientation)
+	{
+		int desW = m_fold.layoutItemns.at(0).width * Video2WidgetRation_W;
+		int desH = m_fold.layoutItemns.at(0).height * Video2WidgetRation_H * dstList.size();
+		/*Y*/
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, tex_y);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, desW, desH, 0, GL_RED, GL_UNSIGNED_BYTE, (GLvoid*)dstTotal);
+		glUniform1i(sampler_y, 0);
+
+		/*U*/
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, tex_u);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, desW / 2, desH / 2, 0, GL_RED, GL_UNSIGNED_BYTE, (GLvoid*)(dstTotal + desW * desH));
+		glUniform1i(sampler_u, 1);
+
+		/*V*/
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, tex_v);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, desW / 2, desH / 2, 0, GL_RED, GL_UNSIGNED_BYTE, (GLvoid*)(dstTotal + desW * desH + desW * desH / 4));
+		glUniform1i(sampler_v, 2);
+	}
+	else
+	{
+
+	}
+
+}
+
+//将裁剪好的视频块进行竖向拼接
+void VlcPlayerWidget::jointVideo()
+{
+	std::vector<DstData> connectList;
+	for (int i = 0; i < dstList.size(); i++)
+	{
+		DstData dst;
+		dst.data = dstList.at(i);
+		dst.dstW = m_fold.layoutItemns.at(i).width * Video2WidgetRation_W;
+		dst.dstH = m_fold.layoutItemns.at(i).height * Video2WidgetRation_H;
+		connectList.push_back(dst);
+	}
+	connectI420(connectList, dstTotal);
+}
+
+void VlcPlayerWidget::initializeArrays(int w, int h)
+{
+        int size = m_fold.layoutItemns.size();
+        if (0 == dstList.size())
+        {
+            for (int i = 0; i < size; i++)
+            {
+                double si = (w * h + w * h / 2) / size;
+                int s = ceil(si);
+                if (m_fold.orientation == VERTICAL)
+                {
+                    uint8_t *dst = new uint8_t[ceil((w * h + w * h / 2) * (m_fold.layoutItemns.at(i).width) / widgetWidth)];
+                    dstList.push_back(dst);
+                }
+                else
+                {
+                    uint8_t *dst = new uint8_t[ceil((w * h + w * h / 2) * (m_fold.layoutItemns.at(i).height) / widgetHeight)];
+                    dstList.push_back(dst);
+                }
+            }
+            dstTotal = new uint8_t[(w * h + w * h / 2)];
+        }
+}
+
+//按打折数裁剪视频
+void VlcPlayerWidget::cutByfondCount(int w, int h)
+{
+	int blockX = 0; // 裁剪前每块的X偏移量
+	int blockY = 0; // 裁剪前每块的Y偏移量
+	int index = 1;
+	for (auto layout : m_fold.layoutItemns)
+	{
+			if (EnumOrientation::VERTICAL == m_fold.orientation)			{
+				Cut_I420(
+					des,
+					blockX,                                                             // 裁剪目标块X偏移()
+					0,                                                                  // 裁剪目标块y偏移（后续支持XY偏移量之后更改此参数即可）
+					w, h,                                                               // 视频源宽高
+					dstList.at(index-1),
+					m_fold.layoutItemns.at(index-1).width * Video2WidgetRation_W,
+					m_fold.layoutItemns.at(index-1).height * Video2WidgetRation_H);           //裁剪目标宽高
+				blockX += (m_fold.layoutItemns.at(index - 1).width) * Video2WidgetRation_W;
+			}
+			else
+			{
+				Cut_I420(
+					des,
+					0,																	 // 裁剪目标块X偏移()
+					blockY,                                                              // 裁剪目标块y偏移（后续支持XY偏移量之后更改此参数即可）
+					w, h,                                                                // 视频源宽高
+					dstList.at(index - 1),
+					m_fold.layoutItemns.at(index - 1).width * Video2WidgetRation_W,
+					m_fold.layoutItemns.at(index - 1).height * Video2WidgetRation_H);           //裁剪目标宽高
+				blockY += (m_fold.layoutItemns.at(index - 1).height) * Video2WidgetRation_H;
+			}
+
+		index++;
+	}
 }
 
 void VlcPlayerWidget::resizeGL(int w, int h)
@@ -462,7 +530,7 @@ void VlcPlayerWidget::Ver_Con_2(uint8_t* Src1, uint8_t* Src2, int dstW, int dstH
     int length = (src1Width * src1Height);
     memcpy(Dst, Src1, length);
     int length2 = (src2Width * src2Height);
-    memcpy(Dst + length, Src2, length2);
+    memcpy(Dst + (src1Width * src1Height), Src2, length2);
 
    // SRC1 的U 分量
    int nIndex = 0;
@@ -476,7 +544,7 @@ void VlcPlayerWidget::Ver_Con_2(uint8_t* Src1, uint8_t* Src2, int dstW, int dstH
    // SRC2 的U 分量
    nIndex = 0;
    uint8_t *pUSour2 = Src2 + src1Width * src1Height;
-   uint8_t *pUDest2 = pUDest1 + ((src1Height / 2) * (src1Width / 2)/*后面这一部分是SRC1Y+SRC2Y+SRC1U*/);
+   uint8_t *pUDest2 = Dst + (src1Width * src1Height) + (src2Width * src2Height) + ((src1Height / 2) * (src1Width / 2)/*后面这一部分是SRC1Y+SRC2Y+SRC1U*/);
    for (int i = 0; i < src1Height * 2 / 2 / 2; i++)
    {
        memcpy(pUDest2 + src2Width / 2 * i, pUSour2 + nIndex, src2Width / 2);
@@ -494,10 +562,52 @@ void VlcPlayerWidget::Ver_Con_2(uint8_t* Src1, uint8_t* Src2, int dstW, int dstH
    // SRC2 的V 分量
    nIndex = 0;
    uint8_t *pVSour2 = Src2 + src2Width * src2Height * 5 / 4;
-   uint8_t *pVDest2 = pVDest1 + ((src1Height / 2) * (src1Width / 2)/*后面这一部分是SRC1Y+SRC2Y+SRC1U+SRC2U+SRC1V*/);
+   uint8_t *pVDest2 = pUDest2 + (src1Height / 2) * (src2Width / 2) + ((src1Height / 2) * (src1Width / 2)/*后面这一部分是SRC1Y+SRC2Y+SRC1U+SRC2U+SRC1V*/);
    for (int i = 0; i < src2Height * 2 / 2 / 2; i++)
    {
        memcpy(pVDest2 + src1Width / 2 * i, pVSour2 + nIndex, src2Width / 2);
        nIndex += (src2Width / 2);
    }
+}
+
+void VlcPlayerWidget::connectI420(std::vector<DstData> disList, uint8_t* Dst)
+{
+
+    // 依次拷贝N块数据的Y分量
+    int increaseY = 0;  // Y分量每次递增
+    for (auto dstData : disList)
+    {
+        memcpy(Dst + increaseY, dstData.data, (dstData.dstW * dstData.dstH));
+        increaseY += (dstData.dstW * dstData.dstH);
+    }
+
+    // 依次拷贝N块数据的U分量
+    int increaseU = 0;
+    for (auto dstData : disList)
+    {
+       int nIndex = 0;
+        uint8_t *pUSour = dstData.data + dstData.dstW * dstData.dstH;
+        uint8_t *pUDest = Dst + increaseY + increaseU;
+        for (int i = 0; i < dstData.dstH / 2; i++)
+        {
+            memcpy(pUDest + dstData.dstW / 2 * i, pUSour + nIndex, dstData.dstW / 2);
+            nIndex += (dstData.dstW / 2);
+        }
+        increaseU += (dstData.dstW / 2) * (dstData.dstH / 2);
+    }
+
+    // 依次拷贝N块数据的V分量
+    int increaseV = 0;
+    for (auto dstData : disList)
+    {
+        int nIndex = 0;
+        uint8_t *pVSour = dstData.data + dstData.dstW * dstData.dstH * 5 / 4;;
+        uint8_t *pVDest = Dst + increaseY + increaseU + increaseV;
+        for (int i = 0; i < dstData.dstH / 2; i++)
+        {
+            memcpy(pVDest + dstData.dstW / 2 * i, pVSour + nIndex, dstData.dstW / 2);
+            nIndex += (dstData.dstW / 2);
+        }
+        increaseU += (dstData.dstW / 2) * (dstData.dstH / 2);
+    }
 }

@@ -72,13 +72,18 @@ public:
 
 protected:
     //    virtual void paintEvent(QPaintEvent *event) override;
-
     virtual void initializeGL() override;
     virtual void paintGL() override;
-    virtual void resizeGL(int w, int h) override;
 
+	void drawFrame();
+
+	void jointVideo();
+
+	virtual void resizeGL(int w, int h) override;
 
 private:
+    double Video2WidgetRation_W = 0.0;
+    double Video2WidgetRation_H = 0.0;
     int widgetWidth = 0;
     int widgetHeight = 0;
     std::vector<uint8_t*> dstList;
@@ -89,6 +94,9 @@ private:
     void InitShaders();
     void Cut_I420(uint8_t * Src, int x, int y, int srcWidth, int srcHeight, uint8_t *Dst, int desWidth, int desHeight);
     void Ver_Con_2(uint8_t * Src1, uint8_t * Src2, int dstW, int dstH, uint8_t * Dst);
+    void connectI420(std::vector<DstData> disList, uint8_t * Dst);
+	void initializeArrays(int w, int h);
+    void cutByfondCount(int w, int h);
     GLuint program;
     GLuint tex_y, tex_u, tex_v;
     GLuint sampler_y, sampler_u, sampler_v;
