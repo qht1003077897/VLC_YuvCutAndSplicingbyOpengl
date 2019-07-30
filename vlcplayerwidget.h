@@ -105,12 +105,10 @@ private:
     QMatrix4x4 mProj;
     QMatrix4x4 mView;
     QMatrix4x4 mWorld;
-private:
     Fold m_fold;
     libvlc_instance_t* m_vlc;
     libvlc_media_player_t *m_vlcplayer;
     I420Image *m_Front;
     I420Image *m_Back;
-private:
     QString m_input;
 };
