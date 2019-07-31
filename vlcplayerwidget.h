@@ -82,6 +82,7 @@ protected:
 	virtual void resizeGL(int w, int h) override;
 
 private:
+	//int D_value = 0;
     double Video2WidgetRation_W = 0.0;
     double Video2WidgetRation_H = 0.0;
     int widgetWidth = 0;
@@ -93,10 +94,9 @@ private:
     uint8_t *dstTotal = nullptr;
     void InitShaders();
     void Cut_I420(uint8_t * Src, int x, int y, int srcWidth, int srcHeight, uint8_t *Dst, int desWidth, int desHeight);
-    void Ver_Con_2(uint8_t * Src1, uint8_t * Src2, int dstW, int dstH, uint8_t * Dst);
     void connectI420Ver(std::vector<DstData> disList, uint8_t * Dst);
 	void connectI420Hon(std::vector<DstData> disList, uint8_t * Dst);
-	void initializeArrays(int w, int h);
+	void initializeArrays(int w, int h,int srcLength);
     void cutByfondCount(int w, int h);
     GLuint program;
     GLuint tex_y, tex_u, tex_v;

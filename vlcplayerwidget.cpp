@@ -11,6 +11,8 @@ typedef SSIZE_T ssize_t;
 #include "QTimer"
 #include <math.h>
 #include <iostream>
+#include <algorithm>
+using namespace std;
 
 #define ATTRIB_VERTEX 3
 #define ATTRIB_TEXTURE 4
@@ -24,36 +26,63 @@ VlcPlayerWidget::VlcPlayerWidget(QWidget *parent) :
     m_Back(NULL)
 {
   
-   //this->setWindowFlag(Qt::FramelessWindowHint);
-   //this->setWindowFlags(this->windowFlags() | Qt::WindowStaysOnTopHint);
-	setGeometry(0, 0, 600, 900);// 高度设置不能超过屏幕分辨率1080 ，底部任务栏19，因此不能超过1061
-    m_fold.count = 2;
-    m_fold.enable = true;
-    m_fold.orientation = HORIZONTAL;
-    Layout layout1;
-    layout1.x = 0;
-    layout1.y = 0;
-    layout1.width = 600;
-    layout1.height = 300;
+   this->setWindowFlag(Qt::FramelessWindowHint);
+   this->setWindowFlags(this->windowFlags() | Qt::WindowStaysOnTopHint);
+   m_fold.count = 3;
+   m_fold.enable = true;
+   m_fold.orientation = HORIZONTAL;
+   std::vector<Layout> vectors;
+   Layout layout1;
+   layout1.x = 0;
+   layout1.y = 0;
+   layout1.width = 333;
+   layout1.height = 400;
 
-    Layout layout2;
-    layout2.x = 0;
-    layout2.y = 0;
-    layout2.width = 600;
-	layout2.height = 300;
+   Layout layout2;
+   layout2.x = 0;
+   layout2.y = 0;
+   layout2.width = 333;
+   layout2.height = 400;
 
-	Layout layout3;
-	layout3.x = 0;
-	layout3.y = 0;
-	layout3.width = 600;
-	layout3.height = 300;
-	std::vector<Layout> vectors;
-    vectors.push_back(layout1);
-    vectors.push_back(layout2);
-	vectors.push_back(layout3);
+   Layout layoutLast;
+   layoutLast.x = 0;
+   layoutLast.y = 0;
+   layoutLast.width = 333;		// 最后一个
+   layoutLast.height = 400;
+
+   int length = 0;
+
+   if (m_fold.orientation == VERTICAL)
+   {
+	   length += layout1.width;
+	   length += layout2.width;
+	   length += layoutLast.width;
+	   setGeometry(0, 0, max(layout1.height, layoutLast.height), length);// 高度设置不能超过屏幕分辨率1080 ，底部任务栏19，因此不能超过1061
+	   //D_value = max(layout1.height, layoutLast.height) - min(layout1.height, layoutLast.height);
+   }
+   else
+   {
+		length += layout1.height;
+		length += layout2.height;
+		length += layoutLast.height;
+	   setGeometry(0, 0, max(layout1.width, layoutLast.width), length);// 高度设置不能超过屏幕分辨率1080 ，底部任务栏19，因此不能超过1061
+	   //D_value = max(layout1.width, layoutLast.width) - min(layout1.width, layoutLast.width);
+   }
+
+   vectors.push_back(layout1);
+   vectors.push_back(layout2);
+   vectors.push_back(layoutLast);
+
+	
+
+	//Layout layoutLast;
+	//layoutLast.x = 0;
+	//layoutLast.y = 0;
+	//layoutLast.width = 500;		// 最后一个
+	//layoutLast.height = 200;
+	//vectors.push_back(layoutLast);
+
     m_fold.layoutItemns = vectors;
-
-
 
     //const char* vlc_args[32] = {};
     //int vlc_args_num = 0;
@@ -239,21 +268,42 @@ void VlcPlayerWidget::paintGL()
         {
             des = m_Front->GetY();
 #ifdef QT_NO_DEBUG 
-            // release 发布时避免第一帧无数据红屏
-        //if (*des == '\0')
-        //{
-        //      qDebug() << "data frame  Uninitialized completion  return";
-        //      return;
-        //}
+			//release 发布时避免第一帧无数据红屏
+				if (*des == '\0')
+				{
+					qDebug() << "data frame  Uninitialized completion  return";
+					return;
+				}
 #endif
         int w = m_Front->GetWidth();
         int h = m_Front->GetHeight();
-        if (0 == Video2WidgetRation_W || 0 == Video2WidgetRation_H)
-          {
-               Video2WidgetRation_W = (double)w / widgetWidth;
-               Video2WidgetRation_H = (double)h / widgetHeight;
-          }
-        initializeArrays(w, h);
+		int srcLength = 0;
+		if (m_fold.orientation == HORIZONTAL)
+		{
+			for (auto layout : m_fold.layoutItemns)
+			{
+				srcLength += layout.width;
+			}
+			if (0 == Video2WidgetRation_W || 0 == Video2WidgetRation_H)
+			{
+				Video2WidgetRation_W = (double)w / srcLength;
+				Video2WidgetRation_H = (double)h / m_fold.layoutItemns[0].height;
+			}
+		}
+		else
+		{
+			for (auto layout : m_fold.layoutItemns)
+			{
+				srcLength += layout.height;
+			}
+			if (0 == Video2WidgetRation_W || 0 == Video2WidgetRation_H)
+			{
+				Video2WidgetRation_W = (double)w / m_fold.layoutItemns[0].width;
+				Video2WidgetRation_H = (double)h / srcLength;
+			}
+		}
+
+        initializeArrays(w, h, srcLength);
         cutByfondCount(w, h);
 		jointVideo();
 		drawFrame();
@@ -269,7 +319,7 @@ void VlcPlayerWidget::drawFrame()
 {
 	int desW = 0;
 	int desH = 0;
-	if (EnumOrientation::VERTICAL == m_fold.orientation)
+	if (EnumOrientation::HORIZONTAL == m_fold.orientation)
 	{
 		 desW = m_fold.layoutItemns.at(0).width * Video2WidgetRation_W;
 		 desH = m_fold.layoutItemns.at(0).height * Video2WidgetRation_H * dstList.size();
@@ -294,11 +344,11 @@ void VlcPlayerWidget::drawFrame()
 		/*V*/
 		glActiveTexture(GL_TEXTURE2);
 		glBindTexture(GL_TEXTURE_2D, tex_v);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, desW / 2, desH / 2, 0, GL_RED, GL_UNSIGNED_BYTE, (GLvoid*)(dstTotal + desW * desH + desW * desH / 4));
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, desW / 2 , desH / 2, 0, GL_RED, GL_UNSIGNED_BYTE, (GLvoid*)(dstTotal + desW * desH + desW * desH / 4));
 		glUniform1i(sampler_v, 2);
 }
 
-//将裁剪好的视频块进行竖向拼接
+//将裁剪好的视频块进行拼接
 void VlcPlayerWidget::jointVideo()
 {
 	std::vector<DstData> connectList;
@@ -310,7 +360,7 @@ void VlcPlayerWidget::jointVideo()
 		dst.dstH = m_fold.layoutItemns.at(i).height * Video2WidgetRation_H;
 		connectList.push_back(dst);
 	}
-	if (m_fold.orientation == VERTICAL)
+	if (m_fold.orientation == HORIZONTAL)
 	{
 		connectI420Ver(connectList, dstTotal);
 	}
@@ -320,24 +370,27 @@ void VlcPlayerWidget::jointVideo()
 	}
 }
 
-void VlcPlayerWidget::initializeArrays(int w, int h)
+void VlcPlayerWidget::initializeArrays(int w, int h,int srcLength)
 {
         int size = m_fold.layoutItemns.size();
         if (0 == dstList.size())
         {
-            for (int i = 0; i < size; i++)
-            {
-                if (m_fold.orientation == VERTICAL)
-                {
-                    uint8_t *dst = new uint8_t[ceil((w * h + w * h / 2) *  (double)(m_fold.layoutItemns.at(i).width) / widgetWidth)];
-                    dstList.push_back(dst);
-                }
-                else
-                {
-                    uint8_t *dst = new uint8_t[ceil((w * h + w * h / 2) * (double)(m_fold.layoutItemns.at(i).height) / widgetHeight)];
-                    dstList.push_back(dst);
-                }
-            }
+			if (m_fold.orientation == HORIZONTAL)
+			{
+				for (int i = 0; i < size; i++)
+				{
+					uint8_t *dst = new uint8_t[ceil(((w * h + w * h / 2) *  (double)(m_fold.layoutItemns.at(i).width)) / srcLength)];
+					dstList.push_back(dst);
+				}
+			}
+			else
+			{
+				for (int i = 0; i < size; i++)
+				{
+					uint8_t *dst = new uint8_t[ceil(((w * h + w * h / 2) * (double)(m_fold.layoutItemns.at(i).height)) / srcLength)];
+					dstList.push_back(dst);
+				}
+			}
             dstTotal = new uint8_t[(w * h + w * h / 2)];
         }
 }
@@ -350,7 +403,10 @@ void VlcPlayerWidget::cutByfondCount(int w, int h)
 	int index = 1;
 	for (auto layout : m_fold.layoutItemns)
 	{
-			if (EnumOrientation::VERTICAL == m_fold.orientation)			{
+			if (EnumOrientation::HORIZONTAL == m_fold.orientation)			{
+				//if (D_value != 0)	 //存在除不尽的情况，最后一块弥补，其它块先不管，再考虑填充黑像素
+				//{
+				//}
 				Cut_I420(
 					des,
 					blockX,                                                             // 裁剪目标块X偏移()
@@ -519,57 +575,6 @@ void VlcPlayerWidget:: Cut_I420(uint8_t* Src, int x, int y, int srcWidth, int sr
     }
 }
 
-void VlcPlayerWidget::Ver_Con_2(uint8_t* Src1, uint8_t* Src2, int dstW, int dstH, uint8_t* Dst)//图片按位置合并
-{
-    int src1Width = dstW;
-    int src1Height = dstH;
-    int src2Width = dstW;
-    int src2Height = dstH;
-
-    // 先拷贝SRC1和SRC2的Y分量
-    int length = (src1Width * src1Height);
-    memcpy(Dst, Src1, length);
-    int length2 = (src2Width * src2Height);
-    memcpy(Dst + (src1Width * src1Height), Src2, length2);
-
-   // SRC1 的U 分量
-   int nIndex = 0;
-   uint8_t *pUSour1 = Src1 + src1Width * src1Height;
-   uint8_t *pUDest1 = Dst + length + length2;
-   for (int i = 0; i < src1Height * 2 / 2 / 2; i++)
-   {
-       memcpy(pUDest1 + src1Width / 2 * i, pUSour1 + nIndex, src1Width / 2);
-       nIndex += (src1Width / 2);
-   }
-   // SRC2 的U 分量
-   nIndex = 0;
-   uint8_t *pUSour2 = Src2 + src1Width * src1Height;
-   uint8_t *pUDest2 = Dst + (src1Width * src1Height) + (src2Width * src2Height) + ((src1Height / 2) * (src1Width / 2)/*后面这一部分是SRC1Y+SRC2Y+SRC1U*/);
-   for (int i = 0; i < src1Height * 2 / 2 / 2; i++)
-   {
-       memcpy(pUDest2 + src2Width / 2 * i, pUSour2 + nIndex, src2Width / 2);
-       nIndex += (src2Width / 2);
-   }
-   // SRC1 的V 分量
-   nIndex = 0;
-   uint8_t *pVSour1 = Src1 + src1Width * src1Height * 5 / 4;
-   uint8_t *pVDest1 = pUDest2 + ((src1Height / 2) * (src2Width / 2)/*后面这一部分是SRC1Y+SRC2Y+SRC1U+SRC2U*/);
-   for (int i = 0; i < src1Height * 2 / 2 / 2; i++)
-   {
-       memcpy(pVDest1 + src1Width / 2 * i, pVSour1 + nIndex, src1Width / 2);
-       nIndex += (src1Width / 2);
-   }
-   // SRC2 的V 分量
-   nIndex = 0;
-   uint8_t *pVSour2 = Src2 + src2Width * src2Height * 5 / 4;
-   uint8_t *pVDest2 = pUDest2 + (src1Height / 2) * (src2Width / 2) + ((src1Height / 2) * (src1Width / 2)/*后面这一部分是SRC1Y+SRC2Y+SRC1U+SRC2U+SRC1V*/);
-   for (int i = 0; i < src2Height * 2 / 2 / 2; i++)
-   {
-       memcpy(pVDest2 + src1Width / 2 * i, pVSour2 + nIndex, src2Width / 2);
-       nIndex += (src2Width / 2);
-   }
-}
-
 void VlcPlayerWidget::connectI420Ver(std::vector<DstData> disList, uint8_t* Dst)
 {
 
@@ -617,6 +622,7 @@ void VlcPlayerWidget::connectI420Hon(std::vector<DstData> disList, uint8_t * Dst
 	int nOffY = 0;		// 当前要拼接图像的Y偏移
 	int nOffX = 0;		// 当前要拼接图像的X偏移
 	UINT nOff = 0;
+	// 拷贝 Y 分量
 	for (auto dstData : disList)
 	{
 		for (int i = 0; i < dstData.dstH; i++)
@@ -629,6 +635,8 @@ void VlcPlayerWidget::connectI420Hon(std::vector<DstData> disList, uint8_t * Dst
 		nOffX += dstData.dstW;
 	}
 
+
+	// 拷贝 U 分量
 	int YTotal = 0;
 	nOffX = 0;
 	nOffY = 0;
@@ -638,7 +646,6 @@ void VlcPlayerWidget::connectI420Hon(std::vector<DstData> disList, uint8_t * Dst
 	{
 		YTotal += dstData.dstW * dstData.dstH;
 	}
-
 	for (auto dstData : disList)
 	{
 		int nIndex = 0;
@@ -646,7 +653,9 @@ void VlcPlayerWidget::connectI420Hon(std::vector<DstData> disList, uint8_t * Dst
 		{
 			nOff = (dstData.dstW / 2) * (nOffY / 2) + (dstData.dstW / 2) * disList.size() * i + nOffX;
 			//逐行拷贝
-			memcpy(Dst + YTotal + nOff, dstData.data + (dstData.dstW * dstData.dstH) + nIndex, dstData.dstW / 2);
+			memcpy(Dst + nOff + YTotal, dstData.data + (dstData.dstW * dstData.dstH) + nIndex, dstData.dstW / 2);
+			// 拷贝 V 分量
+			memcpy(Dst + nOff + YTotal * 5 / 4, dstData.data + (dstData.dstW * dstData.dstH * 5 / 4) + nIndex, dstData.dstW / 2);
 			nIndex += (dstData.dstW / 2);
 		}
 		nOffX += dstData.dstW / 2;

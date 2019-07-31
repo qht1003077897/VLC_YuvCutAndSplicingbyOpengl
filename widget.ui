@@ -31,7 +31,7 @@
       <item>
        <widget class="QLineEdit" name="lineEdit">
         <property name="text">
-         <string>file:///D:\\2.MP4</string>
+         <string>file:///D:\\11.mp4</string>
         </property>
        </widget>
       </item>
