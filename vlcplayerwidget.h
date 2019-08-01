@@ -82,7 +82,7 @@ protected:
 	virtual void resizeGL(int w, int h) override;
 
 private:
-	//int D_value = 0;
+	int D_value = 0;
     double Video2WidgetRation_W = 0.0;
     double Video2WidgetRation_H = 0.0;
     int widgetWidth = 0;
@@ -98,7 +98,8 @@ private:
 	void connectI420Hon(std::vector<DstData> disList, uint8_t * Dst);
 	void initializeArrays(int w, int h,int srcLength);
     void cutByfondCount(int w, int h);
-    GLuint program;
+	void fillBlackPix();
+	GLuint program;
     GLuint tex_y, tex_u, tex_v;
     GLuint sampler_y, sampler_u, sampler_v;
     GLuint matWorld, matView, matProj;

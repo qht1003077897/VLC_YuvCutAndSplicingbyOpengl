@@ -35,21 +35,26 @@ VlcPlayerWidget::VlcPlayerWidget(QWidget *parent) :
    Layout layout1;
    layout1.x = 0;
    layout1.y = 0;
-   layout1.width = 333;
+   layout1.width = 300;
    layout1.height = 400;
 
    Layout layout2;
    layout2.x = 0;
    layout2.y = 0;
-   layout2.width = 333;
+   layout2.width = 300;
    layout2.height = 400;
 
    Layout layoutLast;
    layoutLast.x = 0;
    layoutLast.y = 0;
-   layoutLast.width = 333;		// 最后一个
+   layoutLast.width = 310;		// 最后一个
    layoutLast.height = 400;
 
+   vectors.push_back(layout1);
+   vectors.push_back(layout2);
+   vectors.push_back(layoutLast);
+
+   m_fold.layoutItemns = vectors;
    int length = 0;
 
    if (m_fold.orientation == VERTICAL)
@@ -58,7 +63,7 @@ VlcPlayerWidget::VlcPlayerWidget(QWidget *parent) :
 	   length += layout2.width;
 	   length += layoutLast.width;
 	   setGeometry(0, 0, max(layout1.height, layoutLast.height), length);// 高度设置不能超过屏幕分辨率1080 ，底部任务栏19，因此不能超过1061
-	   //D_value = max(layout1.height, layoutLast.height) - min(layout1.height, layoutLast.height);
+	   D_value = abs(m_fold.layoutItemns.at(m_fold.layoutItemns.size() - 2).height - m_fold.layoutItemns.at(m_fold.layoutItemns.size() - 1).height);
    }
    else
    {
@@ -66,14 +71,10 @@ VlcPlayerWidget::VlcPlayerWidget(QWidget *parent) :
 		length += layout2.height;
 		length += layoutLast.height;
 	   setGeometry(0, 0, max(layout1.width, layoutLast.width), length);// 高度设置不能超过屏幕分辨率1080 ，底部任务栏19，因此不能超过1061
-	   //D_value = max(layout1.width, layoutLast.width) - min(layout1.width, layoutLast.width);
+	   D_value = abs(m_fold.layoutItemns.at(m_fold.layoutItemns.size() - 2).width - m_fold.layoutItemns.at(m_fold.layoutItemns.size() - 1).width);
    }
 
-   vectors.push_back(layout1);
-   vectors.push_back(layout2);
-   vectors.push_back(layoutLast);
 
-	
 
 	//Layout layoutLast;
 	//layoutLast.x = 0;
@@ -82,16 +83,6 @@ VlcPlayerWidget::VlcPlayerWidget(QWidget *parent) :
 	//layoutLast.height = 200;
 	//vectors.push_back(layoutLast);
 
-    m_fold.layoutItemns = vectors;
-
-    //const char* vlc_args[32] = {};
-    //int vlc_args_num = 0;
-    //vlc_args[vlc_args_num++] = "--network-caching=200";
-    ////vlc_args[vlc_args_num++] = "--file-logging";
-    ////vlc_args[vlc_args_num++] = "--logfile=D:/vlc.log";
-    ////vlc_args[vlc_args_num++] = "--log-verbose=2";
-    ////vlc_args[vlc_args_num++] = "--logmode=text";
-    //m_vlc = libvlc_new(vlc_args_num, vlc_args);
     m_vlc = libvlc_new(0, 0);
 
     m_vlcplayer = libvlc_media_player_new(m_vlc);
@@ -305,6 +296,7 @@ void VlcPlayerWidget::paintGL()
 
         initializeArrays(w, h, srcLength);
         cutByfondCount(w, h);
+		fillBlackPix();
 		jointVideo();
 		drawFrame();
         glUniformMatrix4fv(matWorld, 1, GL_FALSE, mWorld.constData());
@@ -335,17 +327,17 @@ void VlcPlayerWidget::drawFrame()
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, desW, desH , 0, GL_RED, GL_UNSIGNED_BYTE, (GLvoid*)dstTotal);
 		glUniform1i(sampler_y, 0);
 
-		/*U*/
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, tex_u);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, desW / 2, desH / 2, 0, GL_RED, GL_UNSIGNED_BYTE, (GLvoid*)(dstTotal + desW * desH));
-		glUniform1i(sampler_u, 1);
+		///*U*/
+		//glActiveTexture(GL_TEXTURE1);
+		//glBindTexture(GL_TEXTURE_2D, tex_u);
+		//glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, desW / 2, desH / 2, 0, GL_RED, GL_UNSIGNED_BYTE, (GLvoid*)(dstTotal + desW * desH));
+		//glUniform1i(sampler_u, 1);
 
-		/*V*/
-		glActiveTexture(GL_TEXTURE2);
-		glBindTexture(GL_TEXTURE_2D, tex_v);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, desW / 2 , desH / 2, 0, GL_RED, GL_UNSIGNED_BYTE, (GLvoid*)(dstTotal + desW * desH + desW * desH / 4));
-		glUniform1i(sampler_v, 2);
+		///*V*/
+		//glActiveTexture(GL_TEXTURE2);
+		//glBindTexture(GL_TEXTURE_2D, tex_v);
+		//glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, desW / 2 , desH / 2, 0, GL_RED, GL_UNSIGNED_BYTE, (GLvoid*)(dstTotal + desW * desH + desW * desH / 4));
+		//glUniform1i(sampler_v, 2);
 }
 
 //将裁剪好的视频块进行拼接
@@ -372,27 +364,29 @@ void VlcPlayerWidget::jointVideo()
 
 void VlcPlayerWidget::initializeArrays(int w, int h,int srcLength)
 {
-        int size = m_fold.layoutItemns.size();
-        if (0 == dstList.size())
-        {
-			if (m_fold.orientation == HORIZONTAL)
+	int size = m_fold.layoutItemns.size();
+	if (0 == dstList.size())
+	{
+		if (m_fold.orientation == HORIZONTAL)
+		{
+			for (int i = 0; i < size; i++)
 			{
-				for (int i = 0; i < size; i++)
-				{
 					uint8_t *dst = new uint8_t[ceil(((w * h + w * h / 2) *  (double)(m_fold.layoutItemns.at(i).width)) / srcLength)];
 					dstList.push_back(dst);
-				}
 			}
-			else
+		}
+		else
+		{
+			for (int i = 0; i < size; i++)
 			{
-				for (int i = 0; i < size; i++)
-				{
 					uint8_t *dst = new uint8_t[ceil(((w * h + w * h / 2) * (double)(m_fold.layoutItemns.at(i).height)) / srcLength)];
 					dstList.push_back(dst);
-				}
 			}
-            dstTotal = new uint8_t[(w * h + w * h / 2)];
-        }
+		}
+		int increase = ceil((D_value * Video2WidgetRation_W) * (m_fold.layoutItemns.at(0).height * Video2WidgetRation_H) * 3 / 2);
+		increase = increase * (size - 1);
+		dstTotal = new uint8_t[(w * h + w * h / 2) + increase];
+	}
 }
 
 //按打折数裁剪视频
@@ -432,6 +426,53 @@ void VlcPlayerWidget::cutByfondCount(int w, int h)
 
 		index++;
 	}
+}
+
+void VlcPlayerWidget::fillBlackPix()
+{
+	if (D_value == 0)
+	{
+		return;
+	}
+	int increase = 0;
+	int size = m_fold.layoutItemns.size();
+		if (m_fold.orientation == HORIZONTAL)
+		{	
+
+			for (int i = 0; i < size; i++)
+			{
+				std::vector<DstData> connectList;
+				if (i != size - 1)
+				{
+					uint8_t *src = dstList.at(i);
+
+					increase = ceil((D_value * Video2WidgetRation_W) * (m_fold.layoutItemns.at(i).height * Video2WidgetRation_H) * 3 / 2);
+					uint8_t *append = new uint8_t[increase];
+					memset(append,0x80, increase);
+
+					DstData dst1;
+					dst1.data = src;
+					dst1.dstW = ceil(m_fold.layoutItemns.at(i).width * Video2WidgetRation_W);
+					dst1.dstH = ceil(m_fold.layoutItemns.at(i).height * Video2WidgetRation_H);
+
+					DstData dst2;
+					dst2.data = append;
+					dst2.dstW = ceil((D_value * Video2WidgetRation_W));
+					dst2.dstH = ceil(m_fold.layoutItemns.at(i).height * Video2WidgetRation_H);
+
+					connectList.push_back(dst1);
+					connectList.push_back(dst2);
+
+					uint8_t *newData = new uint8_t[ceil((m_fold.layoutItemns.at(i).width + D_value)* Video2WidgetRation_W * (m_fold.layoutItemns.at(i).height * Video2WidgetRation_H) * 3 / 2)];
+					connectI420Hon(connectList, newData);
+					delete append;
+					append = nullptr;
+					dstList.at(i) = newData;
+				}
+
+			}
+		}
+
 }
 
 void VlcPlayerWidget::resizeGL(int w, int h)
@@ -561,7 +602,7 @@ void VlcPlayerWidget:: Cut_I420(uint8_t* Src, int x, int y, int srcWidth, int sr
     for (int i = 0; i < desHeight / 2; i++)//  
     {
         // 不懂为什么这儿都是除2？ 难道存储是一个U一个V一个U一个V？
-        memcpy(pUDest + desWidth / 2 * i, pUSour + ((srcWidth / 2) * (BPosY / 2)) + BPosX / 2 + nIndex, desWidth / 2);
+        memcpy(pUDest + desWidth / 2 * i, pUSour + ((srcWidth / 2) * (BPosY / 2)) + BPosX / 2 + nIndex,desWidth / 2);
         nIndex += (srcWidth / 2);
     }
 
@@ -570,7 +611,7 @@ void VlcPlayerWidget:: Cut_I420(uint8_t* Src, int x, int y, int srcWidth, int sr
     uint8_t *pVDest = Dst + desWidth * desHeight * 5 / 4;
     for (int i = 0; i < desHeight / 2; i++)//  
     {
-        memcpy(pVDest + desWidth / 2 * i, pVSour + ((srcWidth / 2) * (BPosY / 2)) + BPosX / 2 + nIndex, desWidth / 2);
+        memcpy(pVDest + desWidth / 2 * i, pVSour + ((srcWidth / 2) * (BPosY / 2)) + BPosX / 2 + nIndex, desWidth  / 2);
         nIndex += (srcWidth / 2);
     }
 }
@@ -622,13 +663,18 @@ void VlcPlayerWidget::connectI420Hon(std::vector<DstData> disList, uint8_t * Dst
 	int nOffY = 0;		// 当前要拼接图像的Y偏移
 	int nOffX = 0;		// 当前要拼接图像的X偏移
 	UINT nOff = 0;
+	int allWidth = 0;
+	for (auto dstData : disList)
+	{
+		allWidth += dstData.dstW;
+	}
 	// 拷贝 Y 分量
 	for (auto dstData : disList)
 	{
 		for (int i = 0; i < dstData.dstH; i++)
 		{
 			// Y轴偏移（体积）,移动到新的点，再弥补上后面几份的宽度， 再加上X 偏移（长度） 可以定位当前要拼接图像的起始点(每段等宽)
-			nOff = dstData.dstW * nOffY + dstData.dstW * disList.size() * i  + nOffX;
+			nOff = dstData.dstW * nOffY + dstData.dstW *allWidth * i  + nOffX;
 			//逐行拷贝
 			memcpy(Dst + nOff, dstData.data + dstData.dstW * i, dstData.dstW);
 		}
@@ -636,28 +682,28 @@ void VlcPlayerWidget::connectI420Hon(std::vector<DstData> disList, uint8_t * Dst
 	}
 
 
-	// 拷贝 U 分量
-	int YTotal = 0;
-	nOffX = 0;
-	nOffY = 0;
-	nOff = 0;
-	int nIndex = 0;
-	for (auto dstData : disList)
-	{
-		YTotal += dstData.dstW * dstData.dstH;
-	}
-	for (auto dstData : disList)
-	{
-		int nIndex = 0;
-		for (int i = 0; i < dstData.dstH / 2; i++)
-		{
-			nOff = (dstData.dstW / 2) * (nOffY / 2) + (dstData.dstW / 2) * disList.size() * i + nOffX;
-			//逐行拷贝
-			memcpy(Dst + nOff + YTotal, dstData.data + (dstData.dstW * dstData.dstH) + nIndex, dstData.dstW / 2);
-			// 拷贝 V 分量
-			memcpy(Dst + nOff + YTotal * 5 / 4, dstData.data + (dstData.dstW * dstData.dstH * 5 / 4) + nIndex, dstData.dstW / 2);
-			nIndex += (dstData.dstW / 2);
-		}
-		nOffX += dstData.dstW / 2;
-	}
+	//// 拷贝 U 分量
+	//int YTotal = 0;
+	//nOffX = 0;
+	//nOffY = 0;
+	//nOff = 0;
+	//int nIndex = 0;
+	//for (auto dstData : disList)
+	//{
+	//	YTotal += dstData.dstW * dstData.dstH;
+	//}
+	//for (auto dstData : disList)
+	//{
+	//	int nIndex = 0;
+	//	for (int i = 0; i < dstData.dstH / 2; i++)
+	//	{
+	//		nOff = (dstData.dstW / 2) * (nOffY / 2) + (dstData.dstW / 2) * allWidth * i + nOffX;
+	//		//逐行拷贝
+	//		memcpy(Dst + nOff + YTotal, dstData.data + (dstData.dstW * dstData.dstH) + nIndex, dstData.dstW / 2);
+	//		// 拷贝 V 分量
+	//		memcpy(Dst + nOff + YTotal * 5 / 4, dstData.data + (dstData.dstW * dstData.dstH * 5 / 4) + nIndex, dstData.dstW / 2);
+	//		nIndex += (dstData.dstW / 2);
+	//	}
+	//	nOffX += dstData.dstW / 2;
+	//}
 }
