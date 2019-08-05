@@ -36,8 +36,11 @@ enum EnumOrientation
 };
 
 struct Fold {
+	int count = 0;
     bool enable = false;
-    int count = 1;
+	int screenWidth = 0;
+	int screenHeight = 0;
+	int firstMarginLeft = 0;
     EnumOrientation orientation = HORIZONTAL;
     std::vector<Layout> layoutItemns;
 };
@@ -56,10 +59,7 @@ public:
     void play();
     void pause();
     void stop();
-//public slots:
-//    void slotupdate();
-//signals:
-//    void signaldraw(int desW, int desH);
+
 public:
     static void *lock_cb(void *opaque, void **planes);
     static void unlock_cb(void *opaque, void *picture, void *const *planes);
@@ -71,22 +71,18 @@ public:
     static void cleanup_cb(void *opaque);
 
 protected:
-    //    virtual void paintEvent(QPaintEvent *event) override;
+
     virtual void initializeGL() override;
     virtual void paintGL() override;
-
-	void drawFrame();
-
-	void jointVideo();
-
 	virtual void resizeGL(int w, int h) override;
-
 private:
-	int D_value = 0;
+	int m_count = 0;
+	int m_firstLeftMargin = 0;
+	int m_lastRightMargin = 0;
     double Video2WidgetRation_W = 0.0;
     double Video2WidgetRation_H = 0.0;
-    int widgetWidth = 0;
-    int widgetHeight = 0;
+	int widgetWidth = 0;
+	int widgetHeight = 0;
     std::vector<uint8_t*> dstList;
     uint8_t *des = nullptr;
     uint8_t *dstLeft = nullptr;
@@ -98,7 +94,9 @@ private:
 	void connectI420Hon(std::vector<DstData> &disList, uint8_t * Dst);
 	void initializeArrays(int w, int h,int srcLength);
     void cutByfondCount(int w, int h);
-	void fillBlackPix();
+	void mergeBlock();
+	void drawFrame();
+	void jointVideo();
 	GLuint program;
     GLuint tex_y, tex_u, tex_v;
     GLuint sampler_y, sampler_u, sampler_v;
