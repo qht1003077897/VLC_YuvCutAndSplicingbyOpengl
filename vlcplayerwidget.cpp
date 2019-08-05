@@ -17,6 +17,51 @@ using namespace std;
 #define ATTRIB_VERTEX 3
 #define ATTRIB_TEXTURE 4
 
+static const char *vertexShader = "\
+attribute vec4 vertexIn;\
+attribute vec2 textureIn;\
+varying vec2 textureOut;\
+uniform mat4 mWorld;\
+uniform mat4 mView;\
+uniform mat4 mProj;\
+void main(void)\
+{\
+    gl_Position =vertexIn * mWorld * mView * mProj  ;\
+    textureOut = textureIn;\
+}";
+
+static const char *fragmentShader = "\
+varying vec2 textureOut;\
+uniform sampler2D tex_y;\
+uniform sampler2D tex_u;\
+uniform sampler2D tex_v;\
+void main(void)\
+{\
+    vec3 yuv;\
+    vec3 rgb;\
+    yuv.x = texture2D(tex_y, textureOut).r;\
+    yuv.y = texture2D(tex_u, textureOut).r - 0.5;\
+    yuv.z = texture2D(tex_v, textureOut).r - 0.5;\
+    rgb = mat3( 1,       1,         1,\
+                0,       -0.39465,  2.03211,\
+                1.13983, -0.58060,  0) * yuv;\
+    gl_FragColor = vec4(rgb, 1);\
+}";
+
+static const GLfloat vertexVertices[] = {
+	-1.0f, -1.0f,
+	1.0f, -1.0f,
+	-1.0f,  1.0f,
+	1.0f,  1.0f,
+};
+
+static const GLfloat textureVertices[] = {
+	0.0f,  1.0f,
+	1.0f,  1.0f,
+	0.0f,  0.0f,
+	1.0f,  0.0f,
+};
+
 
 VlcPlayerWidget::VlcPlayerWidget(QWidget *parent) :
     QOpenGLWidget(parent),
@@ -26,8 +71,8 @@ VlcPlayerWidget::VlcPlayerWidget(QWidget *parent) :
     m_Back(NULL)
 {
   
-   this->setWindowFlag(Qt::FramelessWindowHint);
-   this->setWindowFlags(this->windowFlags() | Qt::WindowStaysOnTopHint);
+   //this->setWindowFlag(Qt::FramelessWindowHint);
+   //this->setWindowFlags(this->windowFlags() | Qt::WindowStaysOnTopHint);
    m_fold.count = 3;
    m_fold.enable = true;
    m_fold.orientation = HORIZONTAL;
@@ -36,19 +81,19 @@ VlcPlayerWidget::VlcPlayerWidget(QWidget *parent) :
    layout1.x = 0;
    layout1.y = 0;
    layout1.width = 300;
-   layout1.height = 400;
+   layout1.height = 200;
 
    Layout layout2;
    layout2.x = 0;
    layout2.y = 0;
    layout2.width = 300;
-   layout2.height = 400;
+   layout2.height = 200;
 
    Layout layoutLast;
    layoutLast.x = 0;
    layoutLast.y = 0;
-   layoutLast.width = 310;		// 最后一个
-   layoutLast.height = 400;
+   layoutLast.width = 312;// （ 不支持奇数）
+   layoutLast.height = 200;
 
    vectors.push_back(layout1);
    vectors.push_back(layout2);
@@ -70,11 +115,9 @@ VlcPlayerWidget::VlcPlayerWidget(QWidget *parent) :
 		length += layout1.height;
 		length += layout2.height;
 		length += layoutLast.height;
-	   setGeometry(0, 0, max(layout1.width, layoutLast.width), length);// 高度设置不能超过屏幕分辨率1080 ，底部任务栏19，因此不能超过1061
-	   D_value = abs(m_fold.layoutItemns.at(m_fold.layoutItemns.size() - 2).width - m_fold.layoutItemns.at(m_fold.layoutItemns.size() - 1).width);
+	    setGeometry(0, 0, max(layout1.width, layoutLast.width), length);// 高度设置不能超过屏幕分辨率1080 ，底部任务栏19，因此不能超过1061
+	    D_value = abs(m_fold.layoutItemns.at(m_fold.layoutItemns.size() - 2).width - m_fold.layoutItemns.at(m_fold.layoutItemns.size() - 1).width);
    }
-
-
 
 	//Layout layoutLast;
 	//layoutLast.x = 0;
@@ -203,52 +246,6 @@ void VlcPlayerWidget::initializeGL()
 
 }
 
-static const char *vertexShader = "\
-attribute vec4 vertexIn;\
-attribute vec2 textureIn;\
-varying vec2 textureOut;\
-uniform mat4 mWorld;\
-uniform mat4 mView;\
-uniform mat4 mProj;\
-void main(void)\
-{\
-    gl_Position =vertexIn * mWorld * mView * mProj  ;\
-    textureOut = textureIn;\
-}";
-
-static const char *fragmentShader = "\
-varying vec2 textureOut;\
-uniform sampler2D tex_y;\
-uniform sampler2D tex_u;\
-uniform sampler2D tex_v;\
-void main(void)\
-{\
-    vec3 yuv;\
-    vec3 rgb;\
-    yuv.x = texture2D(tex_y, textureOut).r;\
-    yuv.y = texture2D(tex_u, textureOut).r - 0.5;\
-    yuv.z = texture2D(tex_v, textureOut).r - 0.5;\
-    rgb = mat3( 1,       1,         1,\
-                0,       -0.39465,  2.03211,\
-                1.13983, -0.58060,  0) * yuv;\
-    gl_FragColor = vec4(rgb, 1);\
-}";
-
-static const GLfloat vertexVertices[] = {
-    -1.0f, -1.0f,
-    1.0f, -1.0f,
-    -1.0f,  1.0f,
-    1.0f,  1.0f,
-};
-
-static const GLfloat textureVertices[] = {
-    0.0f,  1.0f,
-    1.0f,  1.0f,
-    0.0f,  0.0f,
-    1.0f,  0.0f,
-};
-
-
 void VlcPlayerWidget::paintGL()
 {
     // 清除缓冲区
@@ -277,8 +274,8 @@ void VlcPlayerWidget::paintGL()
 			}
 			if (0 == Video2WidgetRation_W || 0 == Video2WidgetRation_H)
 			{
-				Video2WidgetRation_W = (double)w / srcLength;
-				Video2WidgetRation_H = (double)h / m_fold.layoutItemns[0].height;
+				Video2WidgetRation_W = (double)(w / srcLength) ;  // (double)w / srcLength,这种方式计算出的Video2WidgetRation_W double值后面会有十几位小数，导致画面变斜
+				Video2WidgetRation_H = (double)(h / m_fold.layoutItemns[0].height);
 			}
 		}
 		else
@@ -296,14 +293,15 @@ void VlcPlayerWidget::paintGL()
 
         initializeArrays(w, h, srcLength);
         cutByfondCount(w, h);
-		fillBlackPix();
-		jointVideo();
+		//fillBlackPix();
+		//jointVideo();
 		drawFrame();
+
         glUniformMatrix4fv(matWorld, 1, GL_FALSE, mWorld.constData());
         glUniformMatrix4fv(matView, 1, GL_FALSE, mView.constData());
         glUniformMatrix4fv(matProj, 1, GL_FALSE, mProj.constData());
-        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-        glFlush();
+		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+		glFlush();
     }
 }
 
@@ -313,31 +311,66 @@ void VlcPlayerWidget::drawFrame()
 	int desH = 0;
 	if (EnumOrientation::HORIZONTAL == m_fold.orientation)
 	{
-		 desW = m_fold.layoutItemns.at(0).width * Video2WidgetRation_W;
-		 desH = m_fold.layoutItemns.at(0).height * Video2WidgetRation_H * dstList.size();
+		desW = ((m_fold.layoutItemns.at(2).width) * Video2WidgetRation_W);
+		desH = (m_fold.layoutItemns.at(2).height * Video2WidgetRation_H )/** dstList.size())*/;
 	}
 	else
 	{
 		desW = m_fold.layoutItemns.at(0).width * Video2WidgetRation_W * dstList.size();
-		desH = m_fold.layoutItemns.at(0).height * Video2WidgetRation_H ;
+		desH = m_fold.layoutItemns.at(0).height * Video2WidgetRation_H;
 	}
-		/*Y*/	
+
+	std::vector<DstData> connectList;
+	uint8_t *src = dstList.at(0);
+
+	uint8_t *append = new uint8_t[ceil(D_value * Video2WidgetRation_W * desH * 3 / 2)]; // 单独渲染背景色测试时申请的填充空间不能是*3/2，不然V分量渲染卡死，可以增大空间（未测试是否和4倍数有关系）
+	//////填充黑色 YUV
+	int aw = D_value * Video2WidgetRation_W;
+	int ah = desH;
+	memset(append, 0x80, aw * ah * 3 / 2);
+	//for (int i = 0; i < ah; i++)
+	//{
+	//	memset(append + aw * i, 0x00, aw);
+	//}
+	//int y = aw * ah;
+	//for (int i = 0; i < ah / 2; i++)
+	//{
+	//	memset(append + y + (aw / 2) * i, 0x80, aw / 2);
+	//	memset(append + y * 5 / 4 + (aw / 2) * i, 0x80, aw / 2);
+	//}
+
+	DstData dst1;
+	dst1.data = src;
+	dst1.dstW = (m_fold.layoutItemns.at(0).width * Video2WidgetRation_W);
+	dst1.dstH = (m_fold.layoutItemns.at(0).height * Video2WidgetRation_H);
+
+	DstData dst2;
+	dst2.data = append;
+	dst2.dstW = ((D_value * Video2WidgetRation_W));
+	dst2.dstH = (m_fold.layoutItemns.at(2).height * Video2WidgetRation_H);
+
+	connectList.push_back(dst1);
+	connectList.push_back(dst2);
+
+	uint8_t *newData = new uint8_t[ceil(desW * desH * 3 / 2)];
+	connectI420Hon(connectList, newData);
+		/*Y*/
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, tex_y);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, desW, desH , 0, GL_RED, GL_UNSIGNED_BYTE, (GLvoid*)dstTotal);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, desW, desH, 0, GL_RED, GL_UNSIGNED_BYTE, (GLvoid*)newData);
 		glUniform1i(sampler_y, 0);
 
 		///*U*/
-		//glActiveTexture(GL_TEXTURE1);
-		//glBindTexture(GL_TEXTURE_2D, tex_u);
-		//glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, desW / 2, desH / 2, 0, GL_RED, GL_UNSIGNED_BYTE, (GLvoid*)(dstTotal + desW * desH));
-		//glUniform1i(sampler_u, 1);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, tex_u);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, desW / 2, desH / 2, 0, GL_RED, GL_UNSIGNED_BYTE, (GLvoid*)(newData + desW * desH));
+		glUniform1i(sampler_u, 1);
 
 		///*V*/
-		//glActiveTexture(GL_TEXTURE2);
-		//glBindTexture(GL_TEXTURE_2D, tex_v);
-		//glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, desW / 2 , desH / 2, 0, GL_RED, GL_UNSIGNED_BYTE, (GLvoid*)(dstTotal + desW * desH + desW * desH / 4));
-		//glUniform1i(sampler_v, 2);
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, tex_v);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, desW / 2, desH / 2, 0, GL_RED, GL_UNSIGNED_BYTE, (GLvoid*)(newData + desW  * desH * 5 / 4));
+		glUniform1i(sampler_v, 2);
 }
 
 //将裁剪好的视频块进行拼接
@@ -371,21 +404,21 @@ void VlcPlayerWidget::initializeArrays(int w, int h,int srcLength)
 		{
 			for (int i = 0; i < size; i++)
 			{
-					uint8_t *dst = new uint8_t[ceil(((w * h + w * h / 2) *  (double)(m_fold.layoutItemns.at(i).width)) / srcLength)];
+					uint8_t *dst = new uint8_t[ceil((w * h + w * h / 2) *  (double)(m_fold.layoutItemns.at(i).width) / srcLength)];
 					dstList.push_back(dst);
 			}
 		}
-		else
-		{
-			for (int i = 0; i < size; i++)
-			{
-					uint8_t *dst = new uint8_t[ceil(((w * h + w * h / 2) * (double)(m_fold.layoutItemns.at(i).height)) / srcLength)];
-					dstList.push_back(dst);
-			}
-		}
-		int increase = ceil((D_value * Video2WidgetRation_W) * (m_fold.layoutItemns.at(0).height * Video2WidgetRation_H) * 3 / 2);
-		increase = increase * (size - 1);
-		dstTotal = new uint8_t[(w * h + w * h / 2) + increase];
+		//else
+		//{
+		//	for (int i = 0; i < size; i++)
+		//	{
+		//			uint8_t *dst = new uint8_t[ceil(((w * h + w * h / (double)2) * (double)(m_fold.layoutItemns.at(i).height)) / (double)srcLength)];
+		//			dstList.push_back(dst);
+		//	}
+		//}
+		//int increase = ceil((D_value * Video2WidgetRation_W) * (m_fold.layoutItemns.at(0).height * Video2WidgetRation_H) * 3 / 2);
+		//increase = increase * (size - 1);
+		//dstTotal = new uint8_t[(w * h + w * h / (double)2) + increase];
 	}
 }
 
@@ -398,18 +431,15 @@ void VlcPlayerWidget::cutByfondCount(int w, int h)
 	for (auto layout : m_fold.layoutItemns)
 	{
 			if (EnumOrientation::HORIZONTAL == m_fold.orientation)			{
-				//if (D_value != 0)	 //存在除不尽的情况，最后一块弥补，其它块先不管，再考虑填充黑像素
-				//{
-				//}
 				Cut_I420(
 					des,
 					blockX,                                                             // 裁剪目标块X偏移()
 					0,                                                                  // 裁剪目标块y偏移（后续支持XY偏移量之后更改此参数即可）
 					w, h,                                                               // 视频源宽高
 					dstList.at(index-1),
-					m_fold.layoutItemns.at(index-1).width * Video2WidgetRation_W,
-					m_fold.layoutItemns.at(index-1).height * Video2WidgetRation_H);           //裁剪目标宽高
-				blockX += (m_fold.layoutItemns.at(index - 1).width) * Video2WidgetRation_W;
+					((m_fold.layoutItemns.at(index - 1).width * Video2WidgetRation_W)),
+					(m_fold.layoutItemns.at(index - 1).height * Video2WidgetRation_H));           //裁剪目标宽高
+				blockX += ((m_fold.layoutItemns.at(index - 1).width) * Video2WidgetRation_W);
 			}
 			else
 			{
@@ -463,7 +493,7 @@ void VlcPlayerWidget::fillBlackPix()
 					connectList.push_back(dst1);
 					connectList.push_back(dst2);
 
-					uint8_t *newData = new uint8_t[ceil((m_fold.layoutItemns.at(i).width + D_value)* Video2WidgetRation_W * (m_fold.layoutItemns.at(i).height * Video2WidgetRation_H) * 3 / 2)];
+					uint8_t *newData = new uint8_t[ceil((m_fold.layoutItemns.at(i).width + D_value)* Video2WidgetRation_W * (m_fold.layoutItemns.at(i).height * Video2WidgetRation_H) * 3 / (double)2)];
 					connectI420Hon(connectList, newData);
 					delete append;
 					append = nullptr;
@@ -658,7 +688,7 @@ void VlcPlayerWidget::connectI420Ver(std::vector<DstData> disList, uint8_t* Dst)
     }
 }
 
-void VlcPlayerWidget::connectI420Hon(std::vector<DstData> disList, uint8_t * Dst)
+void VlcPlayerWidget::connectI420Hon(std::vector<DstData> &disList, uint8_t * Dst)
 {
 	int nOffY = 0;		// 当前要拼接图像的Y偏移
 	int nOffX = 0;		// 当前要拼接图像的X偏移
@@ -674,36 +704,36 @@ void VlcPlayerWidget::connectI420Hon(std::vector<DstData> disList, uint8_t * Dst
 		for (int i = 0; i < dstData.dstH; i++)
 		{
 			// Y轴偏移（体积）,移动到新的点，再弥补上后面几份的宽度， 再加上X 偏移（长度） 可以定位当前要拼接图像的起始点(每段等宽)
-			nOff = dstData.dstW * nOffY + dstData.dstW *allWidth * i  + nOffX;
+			nOff = dstData.dstW * nOffY + allWidth * i  + nOffX;
 			//逐行拷贝
 			memcpy(Dst + nOff, dstData.data + dstData.dstW * i, dstData.dstW);
 		}
 		nOffX += dstData.dstW;
 	}
 
+	// 拷贝 U 分量
+	int YTotal = 0;
+	nOffX = 0;
+	nOffY = 0;
+	nOff = 0;
+	int nIndex = 0;
+	for (auto dstData : disList)
+	{
+		YTotal += dstData.dstW * dstData.dstH;
+	}
 
-	//// 拷贝 U 分量
-	//int YTotal = 0;
-	//nOffX = 0;
-	//nOffY = 0;
-	//nOff = 0;
-	//int nIndex = 0;
-	//for (auto dstData : disList)
-	//{
-	//	YTotal += dstData.dstW * dstData.dstH;
-	//}
-	//for (auto dstData : disList)
-	//{
-	//	int nIndex = 0;
-	//	for (int i = 0; i < dstData.dstH / 2; i++)
-	//	{
-	//		nOff = (dstData.dstW / 2) * (nOffY / 2) + (dstData.dstW / 2) * allWidth * i + nOffX;
-	//		//逐行拷贝
-	//		memcpy(Dst + nOff + YTotal, dstData.data + (dstData.dstW * dstData.dstH) + nIndex, dstData.dstW / 2);
-	//		// 拷贝 V 分量
-	//		memcpy(Dst + nOff + YTotal * 5 / 4, dstData.data + (dstData.dstW * dstData.dstH * 5 / 4) + nIndex, dstData.dstW / 2);
-	//		nIndex += (dstData.dstW / 2);
-	//	}
-	//	nOffX += dstData.dstW / 2;
-	//}
+	for (auto dstData : disList)
+	{
+		int nIndex = 0;
+		for (int i = 0; i < (dstData.dstH) / 2; i++)
+		{
+			nOff = (dstData.dstW / 2) * (nOffY / 2) + (allWidth / 2) * i + (nOffX);
+			//逐行拷贝
+			 memcpy(Dst + nOff + YTotal, dstData.data + (dstData.dstW * dstData.dstH) + nIndex, dstData.dstW / 2);
+			// 拷贝 V 分量
+			memcpy(Dst + nOff + YTotal * 5 / 4, dstData.data + (dstData.dstW * dstData.dstH * 5 / 4) + nIndex, dstData.dstW / 2);
+			nIndex += (dstData.dstW / 2);
+		}
+		nOffX += dstData.dstW / 2;
+	}
 }

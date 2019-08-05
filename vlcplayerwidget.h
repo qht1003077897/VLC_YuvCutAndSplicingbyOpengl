@@ -95,7 +95,7 @@ private:
     void InitShaders();
     void Cut_I420(uint8_t * Src, int x, int y, int srcWidth, int srcHeight, uint8_t *Dst, int desWidth, int desHeight);
     void connectI420Ver(std::vector<DstData> disList, uint8_t * Dst);
-	void connectI420Hon(std::vector<DstData> disList, uint8_t * Dst);
+	void connectI420Hon(std::vector<DstData> &disList, uint8_t * Dst);
 	void initializeArrays(int w, int h,int srcLength);
     void cutByfondCount(int w, int h);
 	void fillBlackPix();
