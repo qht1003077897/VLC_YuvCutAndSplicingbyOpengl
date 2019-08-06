@@ -83,10 +83,10 @@ private:
     double Video2WidgetRation_H = 0.0;
 	int widgetWidth = 0;
 	int widgetHeight = 0;
-    std::vector<uint8_t*> dstList;
+    std::vector<uint8_t*> dstList;	 // 裁剪好的视频块存放list
+	std::vector<uint8_t*> appendList;// 对于每一帧它的左右append大小都是一样的，因此优化效率，只创建一次append,暂不考虑左右都有留白的情况
+	std::vector<uint8_t*> tempList;  // 拼接好的视频块存放list（牺牲空间，换取时间效率，避免每次merge时创建，joit时使用）
     uint8_t *des = nullptr;
-    uint8_t *dstLeft = nullptr;
-    uint8_t *dstRight = nullptr;
     uint8_t *dstTotal = nullptr;
     void InitShaders();
     void Cut_I420(uint8_t * Src, int x, int y, int srcWidth, int srcHeight, uint8_t *Dst, int desWidth, int desHeight);
@@ -110,4 +110,5 @@ private:
     I420Image *m_Front;
     I420Image *m_Back;
     QString m_input;
+	void initFond();
 };
