@@ -77,8 +77,6 @@ protected:
 	virtual void resizeGL(int w, int h) override;
 private:
 	int m_count = 0;
-	int m_firstLeftMargin = 0;
-	int m_lastRightMargin = 0;
     double Video2WidgetRation_W = 0.0;
     double Video2WidgetRation_H = 0.0;
 	int widgetWidth = 0;

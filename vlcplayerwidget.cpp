@@ -122,24 +122,33 @@ void VlcPlayerWidget::setInput(QString input)
 
 void VlcPlayerWidget::play()
 {
-    widgetWidth = this->width();
-    widgetHeight = this->height();
 	initFond();
-	int length = 0;
-
+	m_count = m_fold.count;
+	int dValue = 0;
 	if (m_fold.orientation == HORIZONTAL)
 	{
-		m_count = m_fold.count;
-		m_firstLeftMargin = m_fold.layoutItemns.at(0).x;
-		if (m_count == 1)
+		// 这儿的处理是保证每段宽高都是4（还是64？）的倍数，不然渲染崩溃（宽度加余数）
+		if (m_fold.layoutItemns[0].width % 4 != 0)
 		{
-			m_lastRightMargin = widgetWidth - m_firstLeftMargin - m_fold.layoutItemns.at(m_fold.layoutItemns.size() - 1).width;
+			dValue = 4 - (m_fold.layoutItemns[0].width % 4);
+			m_fold.layoutItemns[0].width += dValue;
+			m_fold.layoutItemns[0].x -= dValue;
+			m_fold.layoutItemns[m_fold.count - 1].width -= dValue;
 		}
-		else
-		{
-			m_lastRightMargin = widgetWidth - m_fold.layoutItemns.at(m_fold.layoutItemns.size() - 1).width;
-		}
+		widgetWidth = m_fold.layoutItemns[0].width + m_fold.layoutItemns[0].x;		widgetHeight = m_count * m_fold.layoutItemns[0].height;
 	}
+	else
+	{
+		if (m_fold.layoutItemns[0].height % 4 != 0)
+		{
+			dValue = 4 - (m_fold.layoutItemns[0].height % 4);
+			m_fold.layoutItemns[0].height += dValue;
+			m_fold.layoutItemns[0].y -= dValue;
+			m_fold.layoutItemns[m_fold.count - 1].height -= dValue;
+		}
+		widgetHeight = m_fold.layoutItemns[0].height + m_fold.layoutItemns[0].y;		widgetWidth = m_count * m_fold.layoutItemns[0].width;
+	}
+
 
     stop();
     libvlc_media_t *pmedia = libvlc_media_new_location(m_vlc, m_input.toLocal8Bit().data());
@@ -395,15 +404,6 @@ void VlcPlayerWidget::initFond()
 	layoutLast.y = 0;
 	layoutLast.width = 427;// （ 不支持奇数）
 	layoutLast.height = 200;
-
-	int dValue = 0;
-	if (layout1.width % 4 != 0)
-	{
-		dValue = 4 - (layout1.width % 4);
-		layout1.width += dValue;
-		layout1.x = widgetWidth - layout1.width;
-		layoutLast.width -= dValue;
-	}
 
 	vectors.push_back(layout1);
 	vectors.push_back(layout2);
