@@ -82,6 +82,9 @@ VlcPlayerWidget::VlcPlayerWidget(QWidget *parent) :
 	{
 		appendList.push_back(nullptr);
 		tempList.push_back(nullptr);
+		DstData dt;
+		dt.data = nullptr;
+		connectList.push_back(dt);
 	}
 }
 
@@ -89,14 +92,14 @@ VlcPlayerWidget::~VlcPlayerWidget()
 {
     stop();
     libvlc_release(m_vlc);
-	for (auto dst : dstList)
-	{
-		if (dst)
-		{
-			delete dst;
-			dst = nullptr;
-		}
-	}
+	//for (auto dst : dstList)
+	//{
+	//	if (dst)
+	//	{
+	//		delete dst;
+	//		dst = nullptr;
+	//	}
+	//}
 	for (auto append : appendList)
 	{
 		if (append)
@@ -183,11 +186,11 @@ void VlcPlayerWidget::stop()
         delete m_Back;
         m_Back = NULL;
     }
-    for (auto dst : dstList)
-    {
-        delete dst;
-		dst = nullptr;
-    }
+  //  for (auto dst : dstList)
+  //  {
+  //      delete dst;
+		//dst = nullptr;
+  //  }
     dstList.clear();
 }
 
@@ -295,8 +298,9 @@ void VlcPlayerWidget::paintGL()
 
         initializeArrays(w, h, srcLength);
         cutByfondCount(w, h);
-		mergeBlock();
-		jointVideo();
+		testOneBlock();
+		//mergeBlock();
+		//jointVideo();
 		drawFrame();
 
         glUniformMatrix4fv(matWorld, 1, GL_FALSE, mWorld.constData());
@@ -309,34 +313,35 @@ void VlcPlayerWidget::paintGL()
 
 void VlcPlayerWidget::drawFrame()
 {
-	int desW = 0;
-	int desH = 0;
-	if (EnumOrientation::HORIZONTAL == m_fold.orientation)
-	{
-		desW = (widgetWidth * Video2WidgetRation_W);
-		desH = (widgetHeight * Video2WidgetRation_H);
-	}
-	else
-	{
-		desW = m_fold.layoutItemns.at(0).width * Video2WidgetRation_W * dstList.size();
-		desH = m_fold.layoutItemns.at(0).height * Video2WidgetRation_H;
-	}
+	int desW = connectList[0].dstW;
+	int desH = connectList[0].dstH;
+	//if (EnumOrientation::HORIZONTAL == m_fold.orientation)
+	//{
+	//	
+	//	desW = (widgetWidth * Video2WidgetRation_W);
+	//	desH = (widgetHeight * Video2WidgetRation_H);
+	//}
+	//else
+	//{
+	//	desW = m_fold.layoutItemns.at(0).width * Video2WidgetRation_W * dstList.size();
+	//	desH = m_fold.layoutItemns.at(0).height * Video2WidgetRation_H;
+	//}
 		/*Y*/
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, tex_y);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, desW, desH, 0, GL_RED, GL_UNSIGNED_BYTE, (GLvoid*)dstTotal);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, desW, desH, 0, GL_RED, GL_UNSIGNED_BYTE, (GLvoid*)connectList[0].data);
 		glUniform1i(sampler_y, 0);
 
 		///*U*/
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, tex_u);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, desW / 2, desH / 2, 0, GL_RED, GL_UNSIGNED_BYTE, (GLvoid*)(dstTotal + desW * desH));
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, desW / 2, desH / 2, 0, GL_RED, GL_UNSIGNED_BYTE, (GLvoid*)(connectList[0].data + desW * desH));
 		glUniform1i(sampler_u, 1);
 
 		///*V*/
 		glActiveTexture(GL_TEXTURE2);
 		glBindTexture(GL_TEXTURE_2D, tex_v);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, desW / 2, desH / 2, 0, GL_RED, GL_UNSIGNED_BYTE, (GLvoid*)(dstTotal + desW  * desH * 5 / 4));
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, desW / 2, desH / 2, 0, GL_RED, GL_UNSIGNED_BYTE, (GLvoid*)(connectList[0].data + desW * desH * 5 / 4));
 		glUniform1i(sampler_v, 2);
 }
 
@@ -376,64 +381,122 @@ void VlcPlayerWidget::jointVideo()
 
 void VlcPlayerWidget::initFond()
 {
+
 	m_fold.screenWidth = 1920;
-	m_fold.screenHeight = 200;
-	m_fold.count = 3;
+	m_fold.screenHeight = 1080;
+	m_fold.count = 4;
 	m_fold.enable = true;
 	m_fold.orientation = HORIZONTAL;
 	std::vector<Layout> vectors;
 	Layout layout1;
-	layout1.x = 107;
+	layout1.x = 210;
 	layout1.y = 0;
-	layout1.width = 693;
-	layout1.height = 200;
+	layout1.width = 390;
+	layout1.height = 1080;
 
 	Layout layout2;
 	layout2.x = 0;
 	layout2.y = 0;
-	layout2.width = 800;
-	layout2.height = 200;
+	layout2.width = 600;
+	layout2.height = 1080;
 
-	//Layout layout3;
-	//layout3.x = 0;
-	//layout3.y = 0;
-	//layout3.width = 560;
-	//layout3.height = 200;
+	Layout layout3;
+	layout3.x = 0;
+	layout3.y = 0;
+	layout3.width = 600;
+	layout3.height = 1080;
+
 	Layout layoutLast;
 	layoutLast.x = 0;
 	layoutLast.y = 0;
-	layoutLast.width = 427;// （ 不支持奇数）
-	layoutLast.height = 200;
+	layoutLast.width = 120;
+	layoutLast.height = 1080;
 
 	vectors.push_back(layout1);
 	vectors.push_back(layout2);
+	vectors.push_back(layout3);
 	vectors.push_back(layoutLast);
 
 	m_fold.layoutItemns = vectors;
 }
 
+void VlcPlayerWidget::testOneBlock()
+{
+	int nOff = 0;
+	for (int i=0;i<m_count;i++)
+	{
+		if (nullptr == connectList[i].data)
+		{
+			connectList[i].dstH = dstList[i].dstH;
+			connectList[i].dstW = widgetWidth;
+			connectList[i].data = new uint8_t[ceil(connectList[i].dstW * connectList[i].dstH * 3 / (float)2)];
+		}
+		auto &connectblock = connectList[i];
+		auto &dst = dstList[i];
+		memset(connectblock.data, 0x80, (connectList[i].dstW * connectList[i].dstH * 3 / (float)2));
+
+		if (m_fold.layoutItemns.at(i).x != 0)	//存在左偏移
+		{
+			//Y 分量
+			for (int j = 0; j < connectblock.dstH; j++)
+			{
+				nOff = widgetWidth * j + m_fold.layoutItemns[i].x;
+				memcpy(connectblock.data + nOff, dst.data + dst.dstW * j, dst.dstW);
+			}
+
+			nOff = 0;
+			int nIndex = 0;
+			int YTotal = widgetWidth * connectblock.dstH;
+			for (int k = 0; k < (connectblock.dstH >> 1); k++)
+			{
+				nOff = (widgetWidth >> 1) * k + (m_fold.layoutItemns[i].x >> 1);
+				//逐行拷贝
+				memcpy(connectblock.data + nOff + YTotal, dst.data + dst.dstW * dst.dstH + nIndex, dst.dstW >> 1);
+				// 拷贝 V 分量
+				memcpy(connectblock.data + nOff + YTotal * 5 / 4, dst.data + (dst.dstW * dst.dstH * 5 / 4) + nIndex, dst.dstW >> 1);
+				nIndex += (dst.dstW >> 1);
+			}
+				
+		}
+		else if (widgetWidth - m_fold.layoutItemns.at(i).x - m_fold.layoutItemns.at(i).width != 0)	// 存在右分量
+		{
+			
+		}
+		else
+		{
+			memcpy(connectblock.data, dst.data, dst.dstW * dst.dstH * 3 / (float)2);
+		}
+		break;
+	}
+	
+}
+
 void VlcPlayerWidget::initializeArrays(int w, int h,int srcLength)
 {
-	int size = m_fold.layoutItemns.size();
 	if (0 == dstList.size())
 	{
 		if (m_fold.orientation == HORIZONTAL)
 		{
-			for (int i = 0; i < size; i++)
+			for (int i = 0; i <m_count; i++)
 			{
 				uint8_t *dst = new uint8_t[ceil((w * h + w * h / 2) *  (double)(m_fold.layoutItemns.at(i).width) / srcLength)];
-				dstList.push_back(dst);
+				DstData da;
+				da.data = dst;
+				da.dstH = h;
+				da.dstW = m_fold.layoutItemns[i].width;
+				dstList.push_back(da);
 			}
+			dstTotal = new uint8_t[ceil(widgetWidth * widgetHeight * 3 / 2)];
 		}
-		else
-		{
-			for (int i = 0; i < size; i++)
-			{
-				uint8_t *dst = new uint8_t[ceil(((w * h + w * h / 2) * (double)(m_fold.layoutItemns.at(i).height)) / srcLength)];
-				dstList.push_back(dst);
-			}
-		}
-		dstTotal = new uint8_t[ceil(widgetWidth * Video2WidgetRation_W * widgetHeight * Video2WidgetRation_H * 3 / 2)];
+		//else
+		//{
+		//	//for (int i = 0; i < size; i++)
+		//	//{
+		//	//	uint8_t *dst = new uint8_t[ceil(((w * h + w * h / 2) * (double)(m_fold.layoutItemns.at(i).height)) / srcLength)];
+		//	//	dstList.push_back(dst);
+		//	//}
+		//}
+
 	}
 }
 
@@ -451,22 +514,23 @@ void VlcPlayerWidget::cutByfondCount(int w, int h)
 					blockX,                                                             // 裁剪目标块X偏移()
 					0,                                                                  // 裁剪目标块y偏移（后续支持XY偏移量之后更改此参数即可）
 					w, h,                                                               // 视频源宽高
-					dstList.at(index-1),
-					floor((m_fold.layoutItemns.at(index - 1).width * Video2WidgetRation_W)),
-					floor(m_fold.layoutItemns.at(index - 1).height * Video2WidgetRation_H));           //裁剪目标宽高
-				blockX += ((m_fold.layoutItemns.at(index - 1).width) * Video2WidgetRation_W);
+					dstList.at(index-1).data,
+					dstList.at(index - 1).dstW,
+					dstList.at(index - 1).dstH);           //裁剪目标宽高
+				break;
+				blockX += dstList.at(index - 1).dstW;
 			}
 			else
 			{
-				Cut_I420(
-					des,
-					0,																	 // 裁剪目标块X偏移()
-					blockY,                                                              // 裁剪目标块y偏移（后续支持XY偏移量之后更改此参数即可）
-					w, h,                                                                // 视频源宽高
-					dstList.at(index - 1),
-					m_fold.layoutItemns.at(index - 1).width * Video2WidgetRation_W,
-					m_fold.layoutItemns.at(index - 1).height * Video2WidgetRation_H);           //裁剪目标宽高
-				blockY += (m_fold.layoutItemns.at(index - 1).height) * Video2WidgetRation_H;
+			//	Cut_I420(
+			//		des,
+			//		0,																	 // 裁剪目标块X偏移()
+			//		blockY,                                                              // 裁剪目标块y偏移（后续支持XY偏移量之后更改此参数即可）
+			//		w, h,                                                                // 视频源宽高
+			//		dstList.at(index - 1),
+			//		m_fold.layoutItemns.at(index - 1).width * Video2WidgetRation_W,
+			//		m_fold.layoutItemns.at(index - 1).height * Video2WidgetRation_H);           //裁剪目标宽高
+			//	blockY += (m_fold.layoutItemns.at(index - 1).height) * Video2WidgetRation_H;
 			}
 
 		index++;
@@ -475,80 +539,80 @@ void VlcPlayerWidget::cutByfondCount(int w, int h)
 
 void VlcPlayerWidget::mergeBlock()
 {
-	int increase = 0;
-	if (m_fold.orientation == HORIZONTAL)
-	{
-		if (m_count == 1)
-		{
-			// 打1折，设置首行偏移,暂不考虑1折
-		}
-		else
-		{
-			int desH = m_fold.layoutItemns.at(0).height * Video2WidgetRation_H;
-			for (int i =0;i<m_count;i++)
-			{
-				int desW = 0;
-				bool left = false;
-				bool right = false;
-				if (m_fold.layoutItemns.at(i).x != 0)
-				{
-					left = true;
-					desW = m_fold.layoutItemns.at(i).x * Video2WidgetRation_W;
-					if (appendList.at(i) == nullptr)
-					{
-						uint8_t *appendLeft = new uint8_t[ceil(desW * desH * 3 / 2)];
-						memset(appendLeft, 0x80, desW * desH * 3 / 2);
-						appendList[i] = appendLeft;
-					}
-				}
-				if (widgetWidth - m_fold.layoutItemns.at(i).x - m_fold.layoutItemns.at(i).width != 0)
-				{
-					right = true;
-					desW = (widgetWidth - m_fold.layoutItemns.at(i).x - m_fold.layoutItemns.at(i).width) * Video2WidgetRation_W;
-					if (appendList.at(i) == nullptr)
-					{
-						uint8_t *appendRight = new uint8_t[ceil(desW * desH * 3 / 2)];
-						memset(appendRight, 0x80, desW * desH * 3 / 2);
-						appendList[i] = appendRight;
-					}
-				}
-				if (!left && !right)
-				{
-					tempList[i] = dstList[i];
-					continue;
-				}
-				std::vector<DstData> connectList;
-				uint8_t *src = dstList.at(i);
+	//int increase = 0;
+	//if (m_fold.orientation == HORIZONTAL)
+	//{
+	//	if (m_count == 1)
+	//	{
+	//		// 打1折，设置首行偏移,暂不考虑1折
+	//	}
+	//	else
+	//	{
+	//		int desH = m_fold.layoutItemns.at(0).height * Video2WidgetRation_H;
+	//		for (int i =0;i<m_count;i++)
+	//		{
+	//			int desW = 0;
+	//			bool left = false;
+	//			bool right = false;
+	//			if (m_fold.layoutItemns.at(i).x != 0)
+	//			{
+	//				left = true;
+	//				desW = m_fold.layoutItemns.at(i).x * Video2WidgetRation_W;
+	//				if (appendList.at(i) == nullptr)
+	//				{
+	//					uint8_t *appendLeft = new uint8_t[ceil(desW * desH * 3 / 2)];
+	//					memset(appendLeft, 0x80, desW * desH * 3 / 2);
+	//					appendList[i] = appendLeft;
+	//				}
+	//			}
+	//			if (widgetWidth - m_fold.layoutItemns.at(i).x - m_fold.layoutItemns.at(i).width != 0)
+	//			{
+	//				right = true;
+	//				desW = (widgetWidth - m_fold.layoutItemns.at(i).x - m_fold.layoutItemns.at(i).width) * Video2WidgetRation_W;
+	//				if (appendList.at(i) == nullptr)
+	//				{
+	//					uint8_t *appendRight = new uint8_t[ceil(desW * desH * 3 / 2)];
+	//					memset(appendRight, 0x80, desW * desH * 3 / 2);
+	//					appendList[i] = appendRight;
+	//				}
+	//			}
+	//			if (!left && !right)
+	//			{
+	//				tempList[i] = dstList[i];
+	//				continue;
+	//			}
+	//			std::vector<DstData> connectList;
+	//			uint8_t *src = dstList.at(i);
 
-				DstData dstsrc;
-				dstsrc.data = src;
-				dstsrc.dstW = (m_fold.layoutItemns.at(i).width * Video2WidgetRation_W);
-				dstsrc.dstH = (m_fold.layoutItemns.at(i).height * Video2WidgetRation_H);
+	//			DstData dstsrc;
+	//			dstsrc.data = src;
+	//			dstsrc.dstW = (m_fold.layoutItemns.at(i).width * Video2WidgetRation_W);
+	//			dstsrc.dstH = (m_fold.layoutItemns.at(i).height * Video2WidgetRation_H);
 
-				DstData dstappend;
-				dstappend.data = appendList.at(i);
-				dstappend.dstW = desW;
-				dstappend.dstH = desH;
-				if (left)
-				{
-					connectList.push_back(dstappend);
-					connectList.push_back(dstsrc);
-				}
-				else if(right)
-				{
-					connectList.push_back(dstsrc);
-					connectList.push_back(dstappend);
-				}
+	//			DstData dstappend;
+	//			dstappend.data = appendList.at(i);
+	//			dstappend.dstW = desW;
+	//			dstappend.dstH = desH;
+	//			if (left)
+	//			{
+	//				connectList.push_back(dstappend);
+	//				connectList.push_back(dstsrc);
+	//			}
+	//			else if(right)
+	//			{
+	//				connectList.push_back(dstsrc);
+	//				connectList.push_back(dstappend);
+	//			}
 
-				if (nullptr == tempList.at(i))
-				{
-					uint8_t* tempData = new uint8_t[ceil((desW + m_fold.layoutItemns.at(i).width * Video2WidgetRation_W) * desH * 3 / 2)];
-					tempList[i] = tempData;
-				}
-				connectI420Hon(connectList, tempList[i]);
-			}
-		}
-	}
+	//			if (nullptr == tempList.at(i))
+	//			{
+	//				uint8_t* tempData = new uint8_t[ceil((desW + m_fold.layoutItemns.at(i).width * Video2WidgetRation_W) * desH * 3 / 2)];
+	//				tempList[i] = tempData;
+	//			}
+	//			connectI420Hon(connectList, tempList[i]);
+	//		}
+	//	}
+	//}
 }
 
 void VlcPlayerWidget::resizeGL(int w, int h)

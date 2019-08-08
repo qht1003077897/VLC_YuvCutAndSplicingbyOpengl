@@ -15,9 +15,9 @@ struct libvlc_event_t;
 class context;
 struct DstData
 {
-    int dstW;
-    int dstH;
-    uint8_t *data;
+    int dstW = 0;
+    int dstH = 0;
+    uint8_t *data = nullptr;
 };
 
 //矩形区域信息
@@ -81,7 +81,8 @@ private:
     double Video2WidgetRation_H = 0.0;
 	int widgetWidth = 0;
 	int widgetHeight = 0;
-    std::vector<uint8_t*> dstList;	 // 裁剪好的视频块存放list
+    std::vector<DstData> dstList;	 // 裁剪好的视频块存放list
+	std::vector<DstData> connectList;
 	std::vector<uint8_t*> appendList;// 对于每一帧它的左右append大小都是一样的，因此优化效率，只创建一次append,暂不考虑左右都有留白的情况
 	std::vector<uint8_t*> tempList;  // 拼接好的视频块存放list（牺牲空间，换取时间效率，避免每次merge时创建，joit时使用）
     uint8_t *des = nullptr;
@@ -109,4 +110,5 @@ private:
     I420Image *m_Back;
     QString m_input;
 	void initFond();
+	void testOneBlock();
 };
