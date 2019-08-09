@@ -111,4 +111,10 @@ private:
     QString m_input;
 	void initFond();
 	void testOneBlock();
+	/*
+	  当存在offx时即左边有x偏移，
+	  当offx=0时，即为左边无偏移，直接拼接到大的block的最左边即可，右边空白自动留出来
+	*/
+	void mergeVideo2HorizontalBlock(DstData & connectblock, int offX, DstData & dst);
+	void mergeVideo2VerticalBlock(DstData & connectblock, int offY, DstData & dst);
 };
