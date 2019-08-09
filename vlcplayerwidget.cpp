@@ -82,8 +82,6 @@ VlcPlayerWidget::VlcPlayerWidget(QWidget *parent) :
     libvlc_video_set_format_callbacks(m_vlcplayer, setup_cb, cleanup_cb);
 	for (int i =0; i < 10; i++)	 // ×î¶à10ÕÛ
 	{
-		appendList.push_back(nullptr);
-		tempList.push_back(nullptr);
 		DstData dt;
 		dt.data = nullptr;
 		connectList.push_back(dt);
@@ -99,9 +97,9 @@ void VlcPlayerWidget::initFond()
 	m_fold.orientation = HORIZONTAL;
 	std::vector<Layout> vectors;
 	Layout layout1;
-	layout1.x = 18;
+	layout1.x = 0;
 	layout1.y = 0;
-	layout1.width = 582;
+	layout1.width = 600;
 	layout1.height = 1080;
 
 	Layout layout2;
@@ -141,22 +139,7 @@ VlcPlayerWidget::~VlcPlayerWidget()
 	//		dst = nullptr;
 	//	}
 	//}
-	for (auto append : appendList)
-	{
-		if (append)
-		{
-			delete append;
-			append = nullptr;
-		}
-	}
-	for (auto temp : tempList)
-	{
-		if (temp)
-		{
-			delete temp;
-			temp = nullptr;
-		}
-	}
+
 }
 
 void VlcPlayerWidget::setInput(QString input)
@@ -321,8 +304,8 @@ void VlcPlayerWidget::paintGL()
 		int sourceW = m_Front->GetWidth();
 		int sourceH = m_Front->GetHeight();
 
-		if (m_fold.layoutItemns[0].x != 0)
-		{
+		//if (m_fold.layoutItemns[0].x != 0)
+		//{
 			int dstW = srcLength;
 			int dstH = m_fold.layoutItemns[0].height;
 			if (nullptr == m_afterScale)
@@ -333,7 +316,7 @@ void VlcPlayerWidget::paintGL()
 			sourceW = srcLength;
 			sourceH = dstH;
 			des = m_afterScale;
-		}
+		//}
         initializeArrays(sourceW, sourceH, srcLength);
         cutByfondCount(sourceW, sourceH);
 		testOneBlock();
@@ -396,7 +379,8 @@ void VlcPlayerWidget::testOneBlock()
 			}
 			auto &connectblock = connectList[i];
 			auto &dst = dstList[i];
-			memset(connectblock.data, 0x80, (connectList[i].dstW * connectList[i].dstH * 3 / (float)2));
+			fillBlackColor(connectList[i].dstW, connectList[i].dstH, connectblock.data);
+			//memset(connectblock.data, 0x80, (connectList[i].dstW * connectList[i].dstH * 3 / (float)2));
 
 			int offX = m_fold.layoutItemns[i].x;
 			if (offX != 0)	//´æÔÚ×óÆ«ÒÆ
@@ -824,4 +808,18 @@ void VlcPlayerWidget::scaleI420(uint8_t *src_i420_data, int width, int height, u
 		(uint8_t *)dst_i420_v_data, dst_width >> 1,
 		dst_width, dst_height,
 		(libyuv::FilterMode) mode);
+}
+
+
+void VlcPlayerWidget::fillBlackColor(int desW, int desH, uint8_t * append)
+{
+	for (int i = 0; i < desH; i++)
+	{
+		memset(append + desW * i, 0x00, desW);
+	}
+	for (int i = 0; i < desH / 2; i++)
+	{
+		memset(append + desW * desH + (desW / 2) * i, 0x80, desW / 2);
+		memset(append + desW * desH * 5 / 4 + (desW / 2) * i, 0x80, desW / 2);
+	}
 }

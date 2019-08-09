@@ -84,8 +84,6 @@ private:
 	int widgetHeight = 0;
     std::vector<DstData> dstList;	 // 裁剪好的视频块存放list
 	std::vector<DstData> connectList;
-	std::vector<uint8_t*> appendList;// 对于每一帧它的左右append大小都是一样的，因此优化效率，只创建一次append,暂不考虑左右都有留白的情况
-	std::vector<uint8_t*> tempList;  // 拼接好的视频块存放list（牺牲空间，换取时间效率，避免每次merge时创建，joit时使用）
     uint8_t *des = nullptr;
 	uint8_t *m_afterScale = nullptr;
     uint8_t *dstTotal = nullptr;
@@ -95,10 +93,9 @@ private:
 	void connectI420Hon(std::vector<DstData> &disList, uint8_t * Dst);
 	void initializeArrays(int w, int h,int srcLength);
     void cutByfondCount(int w, int h);
-	void mergeBlock();
-	void drawFrame();
 	void jointVideo();
 	void scaleI420(uint8_t * src_i420_data, int width, int height, uint8_t * dst_i420_data, int dst_width, int dst_height, int mode);
+	void fillBlackColor(int desW, int desH, uint8_t * append);
 	GLuint program;
     GLuint tex_y, tex_u, tex_v;
     GLuint sampler_y, sampler_u, sampler_v;
