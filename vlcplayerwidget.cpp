@@ -90,35 +90,35 @@ VlcPlayerWidget::VlcPlayerWidget(QWidget *parent) :
 void VlcPlayerWidget::initFond()
 {
 
-	m_fold.screenWidth = 1920;
-	m_fold.screenHeight = 1080;
+	m_fold.screenWidth = 1080;
+	m_fold.screenHeight = 1920;
 	m_fold.count = 4;
 	m_fold.enable = true;
-	m_fold.orientation = HORIZONTAL;
+	m_fold.orientation = VERTICAL;
 	std::vector<Layout> vectors;
 	Layout layout1;
 	layout1.x = 0;
-	layout1.y = 0;
-	layout1.width = 600;
-	layout1.height = 1080;
+	layout1.y = 10;
+	layout1.width = 1080;
+	layout1.height = 490;
 
 	Layout layout2;
 	layout2.x = 0;
 	layout2.y = 0;
-	layout2.width = 600;
-	layout2.height = 1080;
+	layout2.width = 1080;
+	layout2.height = 500;
 
 	Layout layout3;
 	layout3.x = 0;
 	layout3.y = 0;
-	layout3.width = 600;
-	layout3.height = 1080;
+	layout3.width = 1080;
+	layout3.height = 500;
 
 	Layout layoutLast;
 	layoutLast.x = 0;
 	layoutLast.y = 0;
-	layoutLast.width = 120;
-	layoutLast.height = 1080;
+	layoutLast.width = 1080;
+	layoutLast.height = 420;
 
 	vectors.push_back(layout1);
 	vectors.push_back(layout2);
@@ -158,13 +158,13 @@ void VlcPlayerWidget::play()
 	}
 	else
 	{
-		if (m_fold.layoutItemns[0].height % 4 != 0)
-		{
-			dValue = 4 - (m_fold.layoutItemns[0].height % 4);
-			m_fold.layoutItemns[0].height += dValue;
-			m_fold.layoutItemns[0].y -= dValue;
-			m_fold.layoutItemns[m_fold.count - 1].height -= dValue;
-		}
+		//if (m_fold.layoutItemns[0].height % 4 != 0)
+		//{
+		//	dValue = 4 - (m_fold.layoutItemns[0].height % 4);
+		//	m_fold.layoutItemns[0].height += dValue;
+		//	m_fold.layoutItemns[0].y -= dValue;
+		//	m_fold.layoutItemns[m_fold.count - 1].height -= dValue;
+		//}
 		widgetHeight = m_fold.layoutItemns[0].height + m_fold.layoutItemns[0].y;		widgetWidth = m_count * m_fold.layoutItemns[0].width;
 	}
 
@@ -276,23 +276,28 @@ void VlcPlayerWidget::paintGL()
 
         if (m_Front)
         {
-            des = m_Front->GetY();
 
 #ifdef QT_NO_DEBUG 
 			//release 发布时避免第一帧无数据红屏
-				if (*des == '\0')
+				if (*m_Front->GetY() == '\0')
 				{
 					qDebug() << "data frame  Uninitialized completion  return";
 					return;
 				}
 #endif
+		int sourceW = m_Front->GetWidth();
+		int sourceH = m_Front->GetHeight();
 		int srcLength = 0;
+		int dstW = 0;
+		int dstH = 0;
 		if (m_fold.orientation == HORIZONTAL)
 		{
 			for (auto layout : m_fold.layoutItemns)
 			{
 				srcLength += layout.width;
 			}
+			dstW = srcLength;
+			dstH = m_fold.layoutItemns[0].height;
 		}
 		else
 		{
@@ -300,30 +305,36 @@ void VlcPlayerWidget::paintGL()
 			{
 				srcLength += layout.height;
 			}
+			dstW = m_fold.layoutItemns[0].width;
+			dstH = srcLength;
 		}
-		int sourceW = m_Front->GetWidth();
-		int sourceH = m_Front->GetHeight();
+		if (nullptr == m_afterScale)
+		{
+			m_afterScale = new uint8_t[ceil(dstW * dstH * 3 / 2)];
+		}
+		scaleI420(m_Front->GetY(), sourceW, sourceH, m_afterScale, dstW, dstH, 0);
 
-		//if (m_fold.layoutItemns[0].x != 0)
-		//{
-			int dstW = srcLength;
-			int dstH = m_fold.layoutItemns[0].height;
-			if (nullptr == m_afterScale)
-			{
-				m_afterScale = new uint8_t[ceil(dstW * dstH * 3 / 2)];
-			}
-			scaleI420(des, sourceW, sourceH, m_afterScale, dstW, dstH, 0);
-			sourceW = srcLength;
-			sourceH = dstH;
-			des = m_afterScale;
-		//}
-        initializeArrays(sourceW, sourceH, srcLength);
-        cutByfondCount(sourceW, sourceH);
+		initializeArrays(dstW, dstH, srcLength);
+		cutByfondCount(dstW, dstH);
 		testOneBlock();
 		jointVideo();
 
-		int desW =connectList[0].dstW;
-		int desH =widgetHeight;
+
+		int desW = 0;
+		int desH = 0;
+		if (m_fold.orientation == HORIZONTAL)
+		{
+			desW = connectList[0].dstW;
+			desH = widgetHeight;
+		}
+		else
+		{
+		desW = widgetWidth;
+		desH = connectList[0].dstH;
+			//desW = 1920;
+			//desH = 400;
+		}
+
 
 		/*Y*/
 		glActiveTexture(GL_TEXTURE0);
@@ -337,7 +348,7 @@ void VlcPlayerWidget::paintGL()
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, desW / 2, desH / 2, 0, GL_RED, GL_UNSIGNED_BYTE, (GLvoid*)(dstTotal + desW * desH));
 		glUniform1i(sampler_u, 1);
 
-		///*V*/
+		/*V*/
 		glActiveTexture(GL_TEXTURE2);
 		glBindTexture(GL_TEXTURE_2D, tex_v);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, desW / 2, desH / 2, 0, GL_RED, GL_UNSIGNED_BYTE, (GLvoid*)(dstTotal + desW * desH * 5 / 4));
@@ -411,7 +422,7 @@ void VlcPlayerWidget::testOneBlock()
 			}
 			auto &connectblock = connectList[i];
 			auto &dst = dstList[i];
-			memset(connectblock.data, 0x80, (connectList[i].dstW * connectList[i].dstH * 3 / (float)2));
+			fillBlackColor(connectList[i].dstW, connectList[i].dstH, connectblock.data);
 
 			int offY = m_fold.layoutItemns[i].y;
 			if (offY != 0)	//存在上偏移
@@ -419,7 +430,7 @@ void VlcPlayerWidget::testOneBlock()
 				mergeVideo2VerticalBlock(connectblock, offY, dst);
 
 			}
-			else if (widgetWidth - offY - m_fold.layoutItemns.at(i).width != 0)	// 存在下偏移
+			else if (widgetHeight - offY - m_fold.layoutItemns.at(i).height != 0)	// 存在下偏移
 			{
 				mergeVideo2VerticalBlock(connectblock, 0, dst);
 			}
@@ -527,11 +538,11 @@ void VlcPlayerWidget::cutByfondCount(int w, int h)
 	{
 			if (EnumOrientation::HORIZONTAL == m_fold.orientation)			{
 				Cut_I420(
-					des,
+					m_afterScale,
 					blockX,                                                             // 裁剪目标块X偏移()
 					0,                                                                  // 裁剪目标块y偏移（后续支持XY偏移量之后更改此参数即可）
 					w, h,                                                               // 视频源宽高
-					dstList.at(index-1).data,
+					dstList.at(index - 1).data,
 					dstList.at(index - 1).dstW,
 					dstList.at(index - 1).dstH);           //裁剪目标宽高
 				blockX += dstList.at(index - 1).dstW;
@@ -539,7 +550,7 @@ void VlcPlayerWidget::cutByfondCount(int w, int h)
 			else
 			{
 				Cut_I420(
-					des,
+					m_afterScale,
 					0,                                                             // 裁剪目标块X偏移()
 					blockY,                                                                  // 裁剪目标块y偏移（后续支持XY偏移量之后更改此参数即可）
 					w, h,                                                               // 视频源宽高
@@ -676,7 +687,7 @@ void VlcPlayerWidget:: Cut_I420(uint8_t* Src, int x, int y, int srcWidth, int sr
     uint8_t *pUDest = Dst + desWidth * desHeight;
     // 此处遍历条件为 i < desHeight / 2 因为src总大小为3/2，而srcWidth * srcHeight只占2/2是存储Y分量的，所有还有1/2的高度是存储UV的
     //YUV420P UV连续存储，先U后V，各占1/4
-    for (int i = 0; i < desHeight >> 1; i++)//  
+    for (int i = 0; i < (desHeight >> 1); i++)//  
     {
         memcpy(pUDest + (desWidth >> 1) * i, pUSour + ((srcWidth >> 1) * (BPosY >> 1)) + (BPosX >> 1) + nIndex,desWidth >> 1);
         nIndex += (srcWidth >> 1);

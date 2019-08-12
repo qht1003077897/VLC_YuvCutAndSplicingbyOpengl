@@ -84,7 +84,6 @@ private:
 	int widgetHeight = 0;
     std::vector<DstData> dstList;	 // 裁剪好的视频块存放list
 	std::vector<DstData> connectList;
-    uint8_t *des = nullptr;
 	uint8_t *m_afterScale = nullptr;
     uint8_t *dstTotal = nullptr;
     void InitShaders();
