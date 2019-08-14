@@ -1,6 +1,6 @@
 #pragma once
 #include <QOpenGLWidget>
-#include <QOpenGLFunctions_2_0>
+#include <QOpenGLFunctions>
 #include <QMatrix4x4>
 #include "I420Image.h"
 #include <assert.h>
@@ -46,7 +46,7 @@ struct Fold {
 };
 
 
-class VlcPlayerWidget : public QOpenGLWidget, public QOpenGLFunctions_2_0 //, public Player
+class VlcPlayerWidget : public QOpenGLWidget, public QOpenGLFunctions //, public Player
 {
     Q_OBJECT
 

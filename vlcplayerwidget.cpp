@@ -20,20 +20,19 @@ using namespace std;
 #define ATTRIB_TEXTURE 4
 
 static const char *vertexShader = "\
-attribute vec4 vertexIn;\
-attribute vec2 textureIn;\
-varying vec2 textureOut;\
-uniform mat4 mWorld;\
-uniform mat4 mView;\
-uniform mat4 mProj;\
-void main(void)\
-{\
-    gl_Position =vertexIn * mWorld * mView * mProj  ;\
-    textureOut = textureIn;\
-}";
+	#version 430 core\n \
+	layout(location = 0) in vec4 vertexIn; \
+	layout(location = 1) in vec2 textureIn; \
+	out vec2 textureOut;  \
+	void main(void)\
+	{\
+		gl_Position =vertexIn ;\
+		textureOut = textureIn;\
+	}";
 
 static const char *fragmentShader = "\
-varying vec2 textureOut;\
+#version 430 core\n \
+in vec2 textureOut;\
 uniform sampler2D tex_y;\
 uniform sampler2D tex_u;\
 uniform sampler2D tex_v;\
@@ -47,21 +46,23 @@ void main(void)\
     rgb = mat3( 1,       1,         1,\
                 0,       -0.39465,  2.03211,\
                 1.13983, -0.58060,  0) * yuv;\
-    gl_FragColor = vec4(rgb, 1);\
+    gl_FragColor = vec4(rgb, 1.0);\
 }";
 
 static const GLfloat vertexVertices[] = {
+	
 	-1.0f, -1.0f,
-	1.0f, -1.0f,
-	-1.0f,  1.0f,
+	1.0f,  -1.0f,
 	1.0f,  1.0f,
+	-1.0f, 1.0f,
 };
 
 static const GLfloat textureVertices[] = {
+
 	0.0f,  1.0f,
 	1.0f,  1.0f,
-	0.0f,  0.0f,
 	1.0f,  0.0f,
+	0.0f,  0.0f,
 };
 
 
@@ -90,40 +91,40 @@ VlcPlayerWidget::VlcPlayerWidget(QWidget *parent) :
 void VlcPlayerWidget::initFond()
 {
 
-	m_fold.screenWidth = 1080;
-	m_fold.screenHeight = 1920;
-	m_fold.count = 4;
+	m_fold.screenWidth = 3840;
+	m_fold.screenHeight = 2160;
+	m_fold.count = 1;
 	m_fold.enable = true;
 	m_fold.orientation = VERTICAL;
 	std::vector<Layout> vectors;
 	Layout layout1;
 	layout1.x = 0;
 	layout1.y = 10;
-	layout1.width = 1080;
-	layout1.height = 490;
+	layout1.width = 3840;
+	layout1.height = 2160;
 
-	Layout layout2;
-	layout2.x = 0;
-	layout2.y = 0;
-	layout2.width = 1080;
-	layout2.height = 500;
+	//Layout layout2;
+	//layout2.x = 0;
+	//layout2.y = 0;
+	//layout2.width = 1080;
+	//layout2.height = 400;
 
-	Layout layout3;
-	layout3.x = 0;
-	layout3.y = 0;
-	layout3.width = 1080;
-	layout3.height = 500;
+	//Layout layout3;
+	//layout3.x = 0;
+	//layout3.y = 0;
+	//layout3.width = 1080;
+	//layout3.height = 500;
 
-	Layout layoutLast;
-	layoutLast.x = 0;
-	layoutLast.y = 0;
-	layoutLast.width = 1080;
-	layoutLast.height = 420;
+	//Layout layoutLast;
+	//layoutLast.x = 0;
+	//layoutLast.y = 0;
+	//layoutLast.width = 1080;
+	//layoutLast.height = 400;
 
 	vectors.push_back(layout1);
-	vectors.push_back(layout2);
-	vectors.push_back(layout3);
-	vectors.push_back(layoutLast);
+	//vectors.push_back(layout2);
+	//vectors.push_back(layout3);
+	//vectors.push_back(layoutLast);
 
 	m_fold.layoutItemns = vectors;
 }
@@ -287,77 +288,75 @@ void VlcPlayerWidget::paintGL()
 #endif
 		int sourceW = m_Front->GetWidth();
 		int sourceH = m_Front->GetHeight();
-		int srcLength = 0;
-		int dstW = 0;
-		int dstH = 0;
-		if (m_fold.orientation == HORIZONTAL)
-		{
-			for (auto layout : m_fold.layoutItemns)
-			{
-				srcLength += layout.width;
-			}
-			dstW = srcLength;
-			dstH = m_fold.layoutItemns[0].height;
-		}
-		else
-		{
-			for (auto layout : m_fold.layoutItemns)
-			{
-				srcLength += layout.height;
-			}
-			dstW = m_fold.layoutItemns[0].width;
-			dstH = srcLength;
-		}
-		if (nullptr == m_afterScale)
-		{
-			m_afterScale = new uint8_t[ceil(dstW * dstH * 3 / 2)];
-		}
-		scaleI420(m_Front->GetY(), sourceW, sourceH, m_afterScale, dstW, dstH, 0);
+		//int srcLength = 0;
+		//int dstW = 0;
+		//int dstH = 0;
+		//if (m_fold.orientation == HORIZONTAL)
+		//{
+		//	for (auto layout : m_fold.layoutItemns)
+		//	{
+		//		srcLength += layout.width;
+		//	}
+		//	dstW = srcLength;
+		//	dstH = m_fold.layoutItemns[0].height;
+		//}
+		//else
+		//{
+		//	for (auto layout : m_fold.layoutItemns)
+		//	{
+		//		srcLength += layout.height;
+		//	}
+		//	dstW = m_fold.layoutItemns[0].width;
+		//	dstH = srcLength;
+		//}
+		//if (nullptr == m_afterScale)
+		//{
+		//	m_afterScale = new uint8_t[ceil(dstW * dstH * 3 / 2)];
+		//}
+		//scaleI420(m_Front->GetY(), sourceW, sourceH, m_afterScale, dstW, dstH, 0);
 
-		initializeArrays(dstW, dstH, srcLength);
-		cutByfondCount(dstW, dstH);
-		testOneBlock();
-		jointVideo();
+		//initializeArrays(dstW, dstH, srcLength);
+		//cutByfondCount(dstW, dstH);
+		//testOneBlock();
+		//jointVideo();
 
+		//int desW = 0;
+		//int desH = 0;
+		//if (m_fold.orientation == HORIZONTAL)
+		//{
+		//	desW = connectList[0].dstW;
+		//	desH = widgetHeight;
+		//}
+		//else
+		//{
+		//desW = widgetWidth;
+		//desH = connectList[0].dstH;
+		//}
 
-		int desW = 0;
-		int desH = 0;
-		if (m_fold.orientation == HORIZONTAL)
-		{
-			desW = connectList[0].dstW;
-			desH = widgetHeight;
-		}
-		else
-		{
-		desW = widgetWidth;
-		desH = connectList[0].dstH;
-			//desW = 1920;
-			//desH = 400;
-		}
-
-
+		int desW = sourceW;
+		int desH = sourceH;
 		/*Y*/
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, tex_y);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, desW, desH, 0, GL_RED, GL_UNSIGNED_BYTE, (GLvoid*)dstTotal);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, desW, desH, 0, GL_RED, GL_UNSIGNED_BYTE, (GLvoid*)m_Front->GetY());
 		glUniform1i(sampler_y, 0);
 
 		/*U*/
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, tex_u);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, desW / 2, desH / 2, 0, GL_RED, GL_UNSIGNED_BYTE, (GLvoid*)(dstTotal + desW * desH));
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, desW / 2, desH / 2, 0, GL_RED, GL_UNSIGNED_BYTE, (GLvoid*)m_Front->GetU());
 		glUniform1i(sampler_u, 1);
 
 		/*V*/
 		glActiveTexture(GL_TEXTURE2);
 		glBindTexture(GL_TEXTURE_2D, tex_v);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, desW / 2, desH / 2, 0, GL_RED, GL_UNSIGNED_BYTE, (GLvoid*)(dstTotal + desW * desH * 5 / 4));
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, desW / 2, desH / 2, 0, GL_RED, GL_UNSIGNED_BYTE, (GLvoid*)m_Front->GetV());
 		glUniform1i(sampler_v, 2);
 
-        glUniformMatrix4fv(matWorld, 1, GL_FALSE, mWorld.constData());
-        glUniformMatrix4fv(matView, 1, GL_FALSE, mView.constData());
-        glUniformMatrix4fv(matProj, 1, GL_FALSE, mProj.constData());
-		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+        //glUniformMatrix4fv(matWorld, 1, GL_FALSE, mWorld.constData());
+        //glUniformMatrix4fv(matView, 1, GL_FALSE, mView.constData());
+        //glUniformMatrix4fv(matProj, 1, GL_FALSE, mProj.constData());
+		glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 		glFlush();
     }
 }
@@ -621,8 +620,16 @@ void VlcPlayerWidget::InitShaders()
     glAttachShader(program, v);
     glAttachShader(program, f);
 
-    glBindAttribLocation(program, ATTRIB_VERTEX, "vertexIn");
-    glBindAttribLocation(program, ATTRIB_TEXTURE, "textureIn");
+    //glBindAttribLocation(program, ATTRIB_VERTEX, "vertexIn");
+    //glBindAttribLocation(program, ATTRIB_TEXTURE, "textureIn");
+
+	glVertexAttribPointer(0, 2, GL_FLOAT, 0, 0, vertexVertices);
+	glEnableVertexAttribArray(0);
+
+	glVertexAttribPointer(1, 2, GL_FLOAT, 0, 0, textureVertices);
+	glEnableVertexAttribArray(1);
+
+
     //Program: Step3
     glLinkProgram(program);
     //Debug
@@ -657,15 +664,11 @@ void VlcPlayerWidget::InitShaders()
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-    glVertexAttribPointer(ATTRIB_VERTEX, 2, GL_FLOAT, 0, 0, vertexVertices);
-    glEnableVertexAttribArray(ATTRIB_VERTEX);
 
-    glVertexAttribPointer(ATTRIB_TEXTURE, 2, GL_FLOAT, 0, 0, textureVertices);
-    glEnableVertexAttribArray(ATTRIB_TEXTURE);
 
-    matWorld = glGetUniformLocation(program, "mWorld");
-    matView = glGetUniformLocation(program, "mView");
-    matProj = glGetUniformLocation(program, "mProj");
+//     matWorld = glGetUniformLocation(program, "mWorld");
+//     matView = glGetUniformLocation(program, "mView");
+//     matProj = glGetUniformLocation(program, "mProj");
 }
 
 void VlcPlayerWidget:: Cut_I420(uint8_t* Src, int x, int y, int srcWidth, int srcHeight, uint8_t* Dst, int desWidth, int desHeight)//Õº∆¨∞¥Œª÷√≤√ºÙ  

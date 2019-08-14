@@ -31,7 +31,14 @@
       <item>
        <widget class="QLineEdit" name="lineEdit">
         <property name="text">
-         <string>file:///D:\11.mp4</string>
+         <string>file:///D:\bb.mp4</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="pushButton_4">
+        <property name="text">
+         <string>选择文件</string>
         </property>
        </widget>
       </item>
