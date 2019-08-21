@@ -16,9 +16,6 @@ typedef SSIZE_T ssize_t;
 #include "libyuv.h"
 using namespace std;
 
-#define ATTRIB_VERTEX 3
-#define ATTRIB_TEXTURE 4
-
 static const char *vertexShader = "\
 	#version 430 core\n \
 	layout(location = 0) in vec4 vertexIn; \
@@ -50,7 +47,7 @@ void main(void)\
 }";
 
 static const GLfloat vertexVertices[] = {
-	
+	// 注意顶点坐标和下面的纹理坐标不是一一对应的，而是镜面对应的
 	-1.0f, -1.0f,
 	1.0f,  -1.0f,
 	1.0f,  1.0f,
@@ -353,9 +350,6 @@ void VlcPlayerWidget::paintGL()
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, desW / 2, desH / 2, 0, GL_RED, GL_UNSIGNED_BYTE, (GLvoid*)m_Front->GetV());
 		glUniform1i(sampler_v, 2);
 
-        //glUniformMatrix4fv(matWorld, 1, GL_FALSE, mWorld.constData());
-        //glUniformMatrix4fv(matView, 1, GL_FALSE, mView.constData());
-        //glUniformMatrix4fv(matProj, 1, GL_FALSE, mProj.constData());
 		glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 		glFlush();
     }
@@ -620,8 +614,6 @@ void VlcPlayerWidget::InitShaders()
     glAttachShader(program, v);
     glAttachShader(program, f);
 
-    //glBindAttribLocation(program, ATTRIB_VERTEX, "vertexIn");
-    //glBindAttribLocation(program, ATTRIB_TEXTURE, "textureIn");
 
 	glVertexAttribPointer(0, 2, GL_FLOAT, 0, 0, vertexVertices);
 	glEnableVertexAttribArray(0);
@@ -663,12 +655,6 @@ void VlcPlayerWidget::InitShaders()
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-
-
-//     matWorld = glGetUniformLocation(program, "mWorld");
-//     matView = glGetUniformLocation(program, "mView");
-//     matProj = glGetUniformLocation(program, "mProj");
 }
 
 void VlcPlayerWidget:: Cut_I420(uint8_t* Src, int x, int y, int srcWidth, int srcHeight, uint8_t* Dst, int desWidth, int desHeight)//图片按位置裁剪  

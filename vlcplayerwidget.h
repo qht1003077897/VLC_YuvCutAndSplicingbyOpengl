@@ -98,10 +98,6 @@ private:
 	GLuint program;
     GLuint tex_y, tex_u, tex_v;
     GLuint sampler_y, sampler_u, sampler_v;
-    GLuint matWorld, matView, matProj;
-    QMatrix4x4 mProj;
-    QMatrix4x4 mView;
-    QMatrix4x4 mWorld;
     Fold m_fold;
     libvlc_instance_t* m_vlc;
     libvlc_media_player_t *m_vlcplayer;
