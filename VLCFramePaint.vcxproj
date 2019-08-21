@@ -135,7 +135,6 @@
     <QtMoc Include="widget.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="frame.h" />
     <ClInclude Include="I420Image.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

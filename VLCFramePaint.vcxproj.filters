@@ -62,9 +62,6 @@
     </QtMoc>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="frame.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="I420Image.h">
       <Filter>Header Files</Filter>
     </ClInclude>

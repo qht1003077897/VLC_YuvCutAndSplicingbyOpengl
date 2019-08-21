@@ -6,80 +6,120 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>705</width>
-    <height>607</height>
+    <width>445</width>
+    <height>117</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Widget</string>
   </property>
-  <widget class="QWidget" name="layoutWidget">
-   <property name="geometry">
-    <rect>
-     <x>9</x>
-     <y>9</y>
-     <width>691</width>
-     <height>591</height>
-    </rect>
-   </property>
-   <layout class="QVBoxLayout" name="verticalLayout" stretch="1,0">
-    <item>
-     <widget class="VlcPlayerWidget" name="widget" native="true"/>
-    </item>
-    <item>
-     <layout class="QHBoxLayout" name="horizontalLayout">
+  <layout class="QGridLayout" name="gridLayout">
+   <item row="0" column="0" rowspan="2">
+    <widget class="QGroupBox" name="groupBox">
+     <property name="title">
+      <string>裁剪方向</string>
+     </property>
+     <widget class="QRadioButton" name="radioButton1">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>22</y>
+        <width>83</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>按宽度裁剪</string>
+      </property>
+     </widget>
+     <widget class="QRadioButton" name="radioButton2">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>44</y>
+        <width>83</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>按高度裁剪</string>
+      </property>
+     </widget>
+    </widget>
+   </item>
+   <item row="0" column="1" rowspan="2">
+    <widget class="QGroupBox" name="groupBox_2">
+     <property name="title">
+      <string>裁剪方式</string>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout">
       <item>
-       <widget class="QLineEdit" name="lineEdit">
+       <widget class="QRadioButton" name="radioButton3">
         <property name="text">
-         <string>file:///D:\bb.mp4</string>
+         <string>opengl顶点方式</string>
         </property>
        </widget>
       </item>
       <item>
-       <widget class="QPushButton" name="pushButton_4">
+       <widget class="QRadioButton" name="radioButton4">
         <property name="text">
-         <string>选择文件</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="pushButton">
-        <property name="focusPolicy">
-         <enum>Qt::TabFocus</enum>
-        </property>
-        <property name="text">
-         <string>开始</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="pushButton_2">
-        <property name="text">
-         <string>暂停/继续</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="pushButton_3">
-        <property name="text">
-         <string>停止</string>
+         <string>yuv裁剪</string>
         </property>
        </widget>
       </item>
      </layout>
-    </item>
-   </layout>
-  </widget>
+    </widget>
+   </item>
+   <item row="0" column="3">
+    <widget class="QPushButton" name="pushButton">
+     <property name="focusPolicy">
+      <enum>Qt::TabFocus</enum>
+     </property>
+     <property name="text">
+      <string>开始</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="3">
+    <widget class="QPushButton" name="pushButton_2">
+     <property name="text">
+      <string>暂停/继续</string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="0" colspan="2">
+    <widget class="QLineEdit" name="lineEdit">
+     <property name="text">
+      <string>file:///D:\bb.mp4</string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="2">
+    <widget class="QPushButton" name="pushButton_4">
+     <property name="text">
+      <string>选择文件</string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="3">
+    <widget class="QPushButton" name="pushButton_3">
+     <property name="text">
+      <string>停止</string>
+     </property>
+    </widget>
+   </item>
+  </layout>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
- <customwidgets>
-  <customwidget>
-   <class>VlcPlayerWidget</class>
-   <extends>QWidget</extends>
-   <header>vlcplayerwidget.h</header>
-   <container>1</container>
-  </customwidget>
- </customwidgets>
+ <tabstops>
+  <tabstop>pushButton_4</tabstop>
+  <tabstop>radioButton2</tabstop>
+  <tabstop>lineEdit</tabstop>
+  <tabstop>radioButton1</tabstop>
+  <tabstop>pushButton</tabstop>
+  <tabstop>pushButton_2</tabstop>
+  <tabstop>pushButton_3</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>

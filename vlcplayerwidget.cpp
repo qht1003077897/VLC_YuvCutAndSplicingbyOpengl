@@ -78,51 +78,77 @@ VlcPlayerWidget::VlcPlayerWidget(QWidget *parent) :
     m_vlcplayer = libvlc_media_player_new(m_vlc);
     libvlc_video_set_callbacks(m_vlcplayer, lock_cb, unlock_cb, display_cb, this);
     libvlc_video_set_format_callbacks(m_vlcplayer, setup_cb, cleanup_cb);
-	for (int i =0; i < 10; i++)	 // 最多10折
+}
+void VlcPlayerWidget::initFond()
+{
+	for (int i = 0; i < 10; i++)	 // 最多10折
 	{
 		DstData dt;
 		dt.data = nullptr;
 		connectList.push_back(dt);
 	}
-}
-void VlcPlayerWidget::initFond()
-{
-
-	m_fold.screenWidth = 3840;
-	m_fold.screenHeight = 2160;
-	m_fold.count = 1;
-	m_fold.enable = true;
-	m_fold.orientation = VERTICAL;
+	m_fold.count = 4;
 	std::vector<Layout> vectors;
-	Layout layout1;
-	layout1.x = 0;
-	layout1.y = 10;
-	layout1.width = 3840;
-	layout1.height = 2160;
+	if (HORIZONTAL == m_fold.orientation)
+	{
+		Layout layout1;
+		layout1.x = 100;
+		layout1.y = 0;
+		layout1.width = 500;
+		layout1.height = 400;
 
-	//Layout layout2;
-	//layout2.x = 0;
-	//layout2.y = 0;
-	//layout2.width = 1080;
-	//layout2.height = 400;
+		Layout layout2;
+		layout2.x = 0;
+		layout2.y = 0;
+		layout2.width = 600;
+		layout2.height = 400;
 
-	//Layout layout3;
-	//layout3.x = 0;
-	//layout3.y = 0;
-	//layout3.width = 1080;
-	//layout3.height = 500;
+		Layout layout3;
+		layout3.x = 0;
+		layout3.y = 0;
+		layout3.width = 600;
+		layout3.height = 400;
 
-	//Layout layoutLast;
-	//layoutLast.x = 0;
-	//layoutLast.y = 0;
-	//layoutLast.width = 1080;
-	//layoutLast.height = 400;
+		Layout layoutLast;
+		layoutLast.x = 0;
+		layoutLast.y = 0;
+		layoutLast.width = 120;
+		layoutLast.height = 400;
+		vectors.push_back(layout1);
+		vectors.push_back(layout2);
+		vectors.push_back(layout3);
+		vectors.push_back(layoutLast);
+	}
+	else
+	{
+		Layout layout1;
+		layout1.x = 0;
+		layout1.y = 100;
+		layout1.width = 400;
+		layout1.height = 200;
 
-	vectors.push_back(layout1);
-	//vectors.push_back(layout2);
-	//vectors.push_back(layout3);
-	//vectors.push_back(layoutLast);
+		Layout layout2;
+		layout2.x = 0;
+		layout2.y = 0;
+		layout2.width = 400;
+		layout2.height = 300;
 
+		Layout layout3;
+		layout3.x = 0;
+		layout3.y = 0;
+		layout3.width = 400;
+		layout3.height = 300;
+
+		Layout layoutLast;
+		layoutLast.x = 0;
+		layoutLast.y = 0;
+		layoutLast.width = 400;
+		layoutLast.height = 180;
+		vectors.push_back(layout1);
+		vectors.push_back(layout2);
+		vectors.push_back(layout3);
+		vectors.push_back(layoutLast);
+	}
 	m_fold.layoutItemns = vectors;
 }
 VlcPlayerWidget::~VlcPlayerWidget()
@@ -140,14 +166,27 @@ VlcPlayerWidget::~VlcPlayerWidget()
 
 }
 
-void VlcPlayerWidget::setInput(QString input)
+void VlcPlayerWidget::setVideoFilePath(QString filepath)
 {
-    m_input = input;
+	m_input = filepath;
+}
+
+void VlcPlayerWidget::setCropDirection(EnumOrientation orition)
+{
+	m_fold.orientation = orition;
+	stop();
+	initFond();
+}
+
+void VlcPlayerWidget::setCropStyle(EnumCropStyle style)
+{
+	m_fold.style = style;
+	stop();
+	initFond();
 }
 
 void VlcPlayerWidget::play()
 {
-	initFond();
 	m_count = m_fold.count;
 	int dValue = 0;
 	if (m_fold.orientation == HORIZONTAL)
@@ -156,19 +195,11 @@ void VlcPlayerWidget::play()
 	}
 	else
 	{
-		//if (m_fold.layoutItemns[0].height % 4 != 0)
-		//{
-		//	dValue = 4 - (m_fold.layoutItemns[0].height % 4);
-		//	m_fold.layoutItemns[0].height += dValue;
-		//	m_fold.layoutItemns[0].y -= dValue;
-		//	m_fold.layoutItemns[m_fold.count - 1].height -= dValue;
-		//}
 		widgetHeight = m_fold.layoutItemns[0].height + m_fold.layoutItemns[0].y;		widgetWidth = m_count * m_fold.layoutItemns[0].width;
 	}
 
-
-    stop();
-    libvlc_media_t *pmedia = libvlc_media_new_location(m_vlc, m_input.toLocal8Bit().data());
+	QString path = "file:///" + m_input;
+    libvlc_media_t *pmedia = libvlc_media_new_location(m_vlc, path.toLocal8Bit().data());
 
     libvlc_media_add_option(pmedia, ":rtsp-tcp=true");
     libvlc_media_add_option(pmedia, ":network-caching=300");
@@ -200,12 +231,34 @@ void VlcPlayerWidget::stop()
         delete m_Back;
         m_Back = NULL;
     }
-  //  for (auto dst : dstList)
-  //  {
-  //      delete dst;
-		//dst = nullptr;
-  //  }
+	if (dstTotal)
+	{
+		delete []dstTotal;
+		dstTotal = NULL;
+	}
+	for (auto dst : dstList)
+	{
+		if (dst.data)
+		{
+			delete []dst.data;
+			dst.data = nullptr;
+		}
+	}
+	for (auto dst : connectList)
+	{
+		if (dst.data)
+		{
+			delete[]dst.data;
+			dst.data = nullptr;
+		}
+	}
+	if (m_afterScale)
+	{
+		delete []m_afterScale;
+		m_afterScale = NULL;
+	}
     dstList.clear();
+	connectList.clear();
 }
 
 
@@ -255,7 +308,18 @@ unsigned VlcPlayerWidget::setup_cb(void **opaque, char *chroma, unsigned *width,
 
 void VlcPlayerWidget::cleanup_cb(void *opaque)
 {
-
+	VlcPlayerWidget *pthis = static_cast<VlcPlayerWidget*>(opaque);
+	assert(pthis);
+	if (pthis->m_Front)
+	{
+		delete pthis->m_Front;
+		pthis->m_Front = nullptr;
+	}
+	if (pthis->m_Back)
+	{
+		delete pthis->m_Back;
+		pthis->m_Back = nullptr;
+	}
 }
 
 void VlcPlayerWidget::initializeGL()
@@ -285,69 +349,75 @@ void VlcPlayerWidget::paintGL()
 #endif
 		int sourceW = m_Front->GetWidth();
 		int sourceH = m_Front->GetHeight();
-		//int srcLength = 0;
-		//int dstW = 0;
-		//int dstH = 0;
-		//if (m_fold.orientation == HORIZONTAL)
-		//{
-		//	for (auto layout : m_fold.layoutItemns)
-		//	{
-		//		srcLength += layout.width;
-		//	}
-		//	dstW = srcLength;
-		//	dstH = m_fold.layoutItemns[0].height;
-		//}
-		//else
-		//{
-		//	for (auto layout : m_fold.layoutItemns)
-		//	{
-		//		srcLength += layout.height;
-		//	}
-		//	dstW = m_fold.layoutItemns[0].width;
-		//	dstH = srcLength;
-		//}
-		//if (nullptr == m_afterScale)
-		//{
-		//	m_afterScale = new uint8_t[ceil(dstW * dstH * 3 / 2)];
-		//}
-		//scaleI420(m_Front->GetY(), sourceW, sourceH, m_afterScale, dstW, dstH, 0);
+		int srcLength = 0;
+		int dstW = 0;
+		int dstH = 0;
+		if (m_fold.style == OpenGL)
+		{
+			// 
 
-		//initializeArrays(dstW, dstH, srcLength);
-		//cutByfondCount(dstW, dstH);
-		//testOneBlock();
-		//jointVideo();
+			dstTotal = m_Front->data;
+		}
+		else
+		{
+			if (m_fold.orientation == HORIZONTAL)
+			{
+				for (auto layout : m_fold.layoutItemns)
+				{
+					srcLength += layout.width;
+				}
+				dstW = srcLength;
+				dstH = m_fold.layoutItemns[0].height;
+			}
+			else
+			{
+				for (auto layout : m_fold.layoutItemns)
+				{
+					srcLength += layout.height;
+				}
+				dstW = m_fold.layoutItemns[0].width;
+				dstH = srcLength;
+			}
+			if (nullptr == m_afterScale)
+			{
+				m_afterScale = new uint8_t[ceil(dstW * dstH * 3 / 2)];
+			}
+			scaleI420(m_Front->GetY(), sourceW, sourceH, m_afterScale, dstW, dstH, 0);
 
-		//int desW = 0;
-		//int desH = 0;
-		//if (m_fold.orientation == HORIZONTAL)
-		//{
-		//	desW = connectList[0].dstW;
-		//	desH = widgetHeight;
-		//}
-		//else
-		//{
-		//desW = widgetWidth;
-		//desH = connectList[0].dstH;
-		//}
-
-		int desW = sourceW;
-		int desH = sourceH;
+			initializeArrays(dstW, dstH, srcLength);
+			cutByfondCount(dstW, dstH);
+			testOneBlock();
+			jointVideo();
+		}
+		
+		int desW = 0;
+		int desH = 0;
+		if (m_fold.orientation == HORIZONTAL)
+		{
+			desW = connectList[0].dstW;
+			desH = widgetHeight;
+		}
+		else
+		{
+			desW = widgetWidth;
+			desH = connectList[0].dstH;
+		}
 		/*Y*/
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, tex_y);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, desW, desH, 0, GL_RED, GL_UNSIGNED_BYTE, (GLvoid*)m_Front->GetY());
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, desW, desH, 0, GL_RED, GL_UNSIGNED_BYTE, (GLvoid*)dstTotal);
 		glUniform1i(sampler_y, 0);
 
 		/*U*/
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, tex_u);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, desW / 2, desH / 2, 0, GL_RED, GL_UNSIGNED_BYTE, (GLvoid*)m_Front->GetU());
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, desW / 2, desH / 2, 0, GL_RED, GL_UNSIGNED_BYTE, (GLvoid*)(dstTotal + desW * desH));
 		glUniform1i(sampler_u, 1);
 
 		/*V*/
 		glActiveTexture(GL_TEXTURE2);
 		glBindTexture(GL_TEXTURE_2D, tex_v);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, desW / 2, desH / 2, 0, GL_RED, GL_UNSIGNED_BYTE, (GLvoid*)m_Front->GetV());
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, desW / 2, desH / 2, 0, GL_RED, GL_UNSIGNED_BYTE, (GLvoid*)(dstTotal + desW * desH * 5 / 4));
 		glUniform1i(sampler_v, 2);
 
 		glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
@@ -366,8 +436,6 @@ void VlcPlayerWidget::jointVideo()
 		connectI420Hon(connectList, dstTotal);
 	}
 }
-
-
 
 void VlcPlayerWidget::testOneBlock()
 {

@@ -20,7 +20,6 @@ struct DstData
     uint8_t *data = nullptr;
 };
 
-//矩形区域信息
 struct Layout
 {
     int x;
@@ -31,22 +30,23 @@ struct Layout
 
 enum EnumOrientation
 {
-    HORIZONTAL,//水平打折
-    VERTICAL/*垂直打折*/
+    HORIZONTAL, //按照宽度裁剪
+    VERTICAL	//按照高度裁剪
 };
-
+enum EnumCropStyle
+{
+	OpenGL,		//利用opengl的顶点方式进行裁剪拼接
+	YUV			//按照YUV数据格式裁剪拼接
+};
 struct Fold {
 	int count = 0;
-    bool enable = false;
-	int screenWidth = 0;
-	int screenHeight = 0;
-	int firstMarginLeft = 0;
     EnumOrientation orientation = HORIZONTAL;
+	EnumCropStyle style = YUV;
     std::vector<Layout> layoutItemns;
 };
 
 
-class VlcPlayerWidget : public QOpenGLWidget, public QOpenGLFunctions //, public Player
+class VlcPlayerWidget : public QOpenGLWidget, public QOpenGLFunctions
 {
     Q_OBJECT
 
@@ -54,8 +54,10 @@ public:
     explicit VlcPlayerWidget(QWidget *parent = 0);
     ~VlcPlayerWidget();
 
+	void setVideoFilePath(QString m_filepath);
+	void setCropDirection(EnumOrientation);
+	void setCropStyle(EnumCropStyle);
 public:
-    void setInput(QString input);
     void play();
     void pause();
     void stop();
