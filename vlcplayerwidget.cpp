@@ -46,22 +46,6 @@ void main(void)\
     gl_FragColor = vec4(rgb, 1.0);\
 }";
 
-static const GLfloat vertexVertices[] = {
-	// 注意顶点坐标和下面的纹理坐标不是一一对应的，而是镜面对应的
-	-1.0f, -1.0f,
-	1.0f,  -1.0f,
-	1.0f,  1.0f,
-	-1.0f, 1.0f,
-};
-
-static const GLfloat textureVertices[] = {
-
-	0.0f,  1.0f,
-	1.0f,  1.0f,
-	1.0f,  0.0f,
-	0.0f,  0.0f,
-};
-
 
 VlcPlayerWidget::VlcPlayerWidget(QWidget *parent) :
     QOpenGLWidget(parent),
@@ -92,27 +76,27 @@ void VlcPlayerWidget::initFond()
 	if (HORIZONTAL == m_fold.orientation)
 	{
 		Layout layout1;
-		layout1.x = 100;
+		layout1.x = 300;
 		layout1.y = 0;
-		layout1.width = 500;
+		layout1.width = 300;
 		layout1.height = 400;
 
 		Layout layout2;
-		layout2.x = 0;
-		layout2.y = 0;
-		layout2.width = 600;
+		layout2.x = 200;
+		layout2.y = 400;
+		layout2.width = 400;
 		layout2.height = 400;
 
 		Layout layout3;
 		layout3.x = 0;
-		layout3.y = 0;
+		layout3.y = 800;
 		layout3.width = 600;
 		layout3.height = 400;
 
 		Layout layoutLast;
 		layoutLast.x = 0;
-		layoutLast.y = 0;
-		layoutLast.width = 120;
+		layoutLast.y = 1200;
+		layoutLast.width = 300;
 		layoutLast.height = 400;
 		vectors.push_back(layout1);
 		vectors.push_back(layout2);
@@ -150,6 +134,8 @@ void VlcPlayerWidget::initFond()
 		vectors.push_back(layoutLast);
 	}
 	m_fold.layoutItemns = vectors;
+	oriScreenWidth = 1800;
+	oriScreenHeight = 400;
 }
 VlcPlayerWidget::~VlcPlayerWidget()
 {
@@ -354,8 +340,6 @@ void VlcPlayerWidget::paintGL()
 		int dstH = 0;
 		if (m_fold.style == OpenGL)
 		{
-			// 
-
 			dstTotal = m_Front->data;
 		}
 		else
@@ -394,14 +378,22 @@ void VlcPlayerWidget::paintGL()
 		int desH = 0;
 		if (m_fold.orientation == HORIZONTAL)
 		{
-			desW = connectList[0].dstW;
+			//desW = connectList[0].dstW;
+			desW = widgetWidth;
 			desH = widgetHeight;
 		}
 		else
 		{
 			desW = widgetWidth;
-			desH = connectList[0].dstH;
+			desH = widgetHeight;
+			//desH = connectList[0].dstH;
 		}
+		if (m_fold.style == OpenGL)
+		{
+			desW = sourceW;
+			desH = sourceH;
+		}
+
 		/*Y*/
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, tex_y);
@@ -419,8 +411,17 @@ void VlcPlayerWidget::paintGL()
 		glBindTexture(GL_TEXTURE_2D, tex_v);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, desW / 2, desH / 2, 0, GL_RED, GL_UNSIGNED_BYTE, (GLvoid*)(dstTotal + desW * desH * 5 / 4));
 		glUniform1i(sampler_v, 2);
-
-		glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+		if (m_fold.style == OpenGL)
+		{
+			for (int i = 0; i < m_count; i++)
+			{
+				glDrawArrays(GL_TRIANGLE_FAN, 4 * i, 4);
+			}
+		}
+		else
+		{
+			glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+		}
 		glFlush();
     }
 }
@@ -658,29 +659,125 @@ void VlcPlayerWidget::resizeGL(int w, int h)
 
 void VlcPlayerWidget::InitShaders()
 {
-    GLint vertCompiled, fragCompiled, linked;
-    GLint v, f;
+	static  GLfloat vertexVertices[100];
+	static  GLfloat textureVertices[100];
+	if (m_fold.style == OpenGL)
+	{
 
-    //Shader: step1
-    v = glCreateShader(GL_VERTEX_SHADER);
-    f = glCreateShader(GL_FRAGMENT_SHADER);
+		std::vector<Point> vertexPoints;
+		std::vector<Point> texurePoints;
+		initPoint(vertexPoints, texurePoints);
+		
+		for (int i = 0,j=0;i<(m_count * 8),j< (m_count * 4);i++,j++)
+		{
+			vertexVertices[i] = vertexPoints[j].x;
+			vertexVertices[i+1] = vertexPoints[j].y;
+			textureVertices[i] = texurePoints[j].x;
+			textureVertices[i + 1] = texurePoints[j].y;
+			i++;
+		}
+		//static const GLfloat vertexVertices[] = {
+		//	// 顶点逆时针旋转
+		//	-1.0f,  0.0f,		// 左上角区域
+		//	 0.0f,  0.0f,
+		//	 0.0f,  1.0f,
+		//	-1.0f,  1.0f,
 
-    //Shader: step2
-    glShaderSource(v, 1, &vertexShader, NULL);
-    glShaderSource(f, 1, &fragmentShader, NULL);
+		//	0.2f, 0.2f,			// 右上角区域
+		//	1.0f, 0.2f,
+		//	1.0f, 1.0f,
+		//	0.2f, 1.0f,
 
-    //Shader: step3
-    glCompileShader(v);
-    glGetShaderiv(v, GL_COMPILE_STATUS, &vertCompiled);    //Debug
+		//	-1.0f,  -1.0f,		// 左下角区域
+		//	 0.0f,  -1.0f,
+		//	 0.0f,  -0.2f,
+		//	-1.0f,  -0.2f,
 
-    glCompileShader(f);
-    glGetShaderiv(f, GL_COMPILE_STATUS, &fragCompiled);    //Debug
+		//	0.2f, -1.0f,		// 右下角区域
+		//	1.0f, -1.0f,
+		//	1.0f, 0.0f,
+		//	0.2f, 0.0f,
+		//};
 
-    //Program: Step1
-    program = glCreateProgram();
-    //Program: Step2
-    glAttachShader(program, v);
-    glAttachShader(program, f);
+		//static  const GLfloat textureVertices[] = {
+		//	// （Y按照和顶点一样的方式逆时针4个点，从左下角开始），然后1- Y (翻转处理，不然出来的图像是反的)
+		//	0.0f, 1 - 0.5f,		// 左上角区域
+		//	0.5f, 1 - 0.5f,
+		//	0.5f, 1 - 1.0f,
+		//	0.0f, 1 - 1.0f,
+
+		//	0.5f,  1 - 0.5f,		// 右上角区域
+		//	1.0f,  1 - 0.5f,
+		//	1.0f,  1 - 1.0f,
+		//	0.5f,  1 - 1.0f,
+
+		//	0.0f, 1 - (0.5f - 0.5f),		// 左下角区域
+		//	0.5f, 1 - (0.5f - 0.5f),
+		//	0.5f, 1 - (1.0f - 0.5f),
+		//	0.0f, 1 - (1.0f - 0.5f),
+
+		//	0.5f,  1 - (0.5f - 0.5f),	// 右下角区域
+		//	1.0f,  1 - (0.5f - 0.5f),
+		//	1.0f,  1 - (1.0f - 0.5f),
+		//	0.5f,  1 - (1.0f - 0.5f),
+		//};
+	}
+	else
+	{
+		 //注意顶点坐标和下面的纹理坐标不是一一对应的，而是镜面对应的
+		vertexVertices[0] = -1.0f;
+		vertexVertices[1] = -1.0f;
+		vertexVertices[2] = 1.0f;
+		vertexVertices[3] = -1.0f;
+		vertexVertices[4] = 1.0f;
+		vertexVertices[5] = 1.0f;
+		vertexVertices[6] = -1.0f;
+		vertexVertices[7] = 1.0f;
+		//vertexVertices = {	
+		//	-1.0f, -1.0f,
+		//	1.0f,  -1.0f,
+		//	1.0f,  1.0f,
+		//	-1.0f, 1.0f
+		//};
+		textureVertices[0] = 0.0f;
+		textureVertices[1] = 1.0f;
+		textureVertices[2] = 1.0f;
+		textureVertices[3] = 1.0f;
+		textureVertices[4] = 1.0f;
+		textureVertices[5] = 0.0f;
+		textureVertices[6] = 0.0f;
+		textureVertices[7] = 0.0f;
+		//textureVertices = {
+		//	0.0f,  1.0f,
+		//	1.0f,  1.0f,
+		//	1.0f,  0.0f,
+		//	0.0f,  0.0f
+		//};
+	}
+
+	GLint vertCompiled, fragCompiled, linked;
+	GLint v, f;
+
+	//Shader: step1
+	v = glCreateShader(GL_VERTEX_SHADER);
+	f = glCreateShader(GL_FRAGMENT_SHADER);
+
+	//Shader: step2
+	glShaderSource(v, 1, &vertexShader, NULL);
+	glShaderSource(f, 1, &fragmentShader, NULL);
+
+	//Shader: step3
+	glCompileShader(v);
+	glGetShaderiv(v, GL_COMPILE_STATUS, &vertCompiled);    //Debug
+
+	glCompileShader(f);
+	glGetShaderiv(f, GL_COMPILE_STATUS, &fragCompiled);    //Debug
+
+	//Program: Step1
+	program = glCreateProgram();
+	//Program: Step2
+	glAttachShader(program, v);
+	glAttachShader(program, f);
 
 
 	glVertexAttribPointer(0, 2, GL_FLOAT, 0, 0, vertexVertices);
@@ -690,39 +787,123 @@ void VlcPlayerWidget::InitShaders()
 	glEnableVertexAttribArray(1);
 
 
-    //Program: Step3
-    glLinkProgram(program);
-    //Debug
-    glGetProgramiv(program, GL_LINK_STATUS, &linked);
+	//Program: Step3
+	glLinkProgram(program);
+	//Debug
+	glGetProgramiv(program, GL_LINK_STATUS, &linked);
 
-    glUseProgram(program);
+	glUseProgram(program);
 
-    //Get Uniform Variables Location
-    sampler_y = glGetUniformLocation(program, "tex_y");
-    sampler_u = glGetUniformLocation(program, "tex_u");
-    sampler_v = glGetUniformLocation(program, "tex_v");
+	//Get Uniform Variables Location
+	sampler_y = glGetUniformLocation(program, "tex_y");
+	sampler_u = glGetUniformLocation(program, "tex_u");
+	sampler_v = glGetUniformLocation(program, "tex_v");
 
-    //Init Texture
-    glGenTextures(1, &tex_y);
-    glBindTexture(GL_TEXTURE_2D, tex_y);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	//Init Texture
+	glGenTextures(1, &tex_y);
+	glBindTexture(GL_TEXTURE_2D, tex_y);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-    glGenTextures(1, &tex_u);
-    glBindTexture(GL_TEXTURE_2D, tex_u);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glGenTextures(1, &tex_u);
+	glBindTexture(GL_TEXTURE_2D, tex_u);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-    glGenTextures(1, &tex_v);
-    glBindTexture(GL_TEXTURE_2D, tex_v);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glGenTextures(1, &tex_v);
+	glBindTexture(GL_TEXTURE_2D, tex_v);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+ 
+}
+
+void VlcPlayerWidget::initPoint(std::vector<Point> &vertexPoints, std::vector<Point> &texurePoints)
+{
+	// 顶点和纹理坐标是镜像同方向转动的，因此每个矩形也是镜像对应的
+	//反向遍历，不然图像就颠倒了（*镜像）
+
+	auto fonds = m_fold.layoutItemns;
+	if (HORIZONTAL == m_fold.orientation)
+	{
+		//顶点，横向
+		for (int i = 0; i < m_count; i++)
+		{
+			// 左下->右下->右上->左上
+			Point pointLeftBottom;
+			pointLeftBottom.x = (fonds[i].x / ((float)widgetWidth / 2)) - 1;
+			pointLeftBottom.y = 1 - ((fonds[i].y + fonds[i].height) / ((float)widgetHeight / 2));
+			Point pointRightBottom;
+			pointRightBottom.x = (((fonds[i].x + fonds[i].width) - (widgetWidth / 2)) / (float)(widgetWidth / 2));
+			pointRightBottom.y = 1 - ((fonds[i].y + fonds[i].height) / ((float)widgetHeight / 2));
+			Point pointRightTop;
+			pointRightTop.x = (((fonds[i].x + fonds[i].width) - (widgetWidth / 2)) / (float)(widgetWidth / 2));
+			pointRightTop.y = (((float)widgetHeight / 2) - fonds[i].y) / (float)(widgetHeight / 2);
+			Point pointLeftTop;
+			pointLeftTop.x = (fonds[i].x / ((float)widgetWidth / 2)) - 1;
+			pointLeftTop.y = (((float)widgetHeight / 2) - fonds[i].y) / (float)(widgetHeight / 2);
+			vertexPoints.push_back(pointLeftBottom);
+			vertexPoints.push_back(pointRightBottom);
+			vertexPoints.push_back(pointRightTop);
+			vertexPoints.push_back(pointLeftTop);
+		}
+		//纹理，竖向切割原视频
+		int previousWidth = 0;
+		for (int i = m_count - 1; i >= 0; i--)
+		{
+			// 左上->右上->右下->左下
+			Point pointLeftTop;
+			pointLeftTop.x = previousWidth / (float)oriScreenWidth;
+			pointLeftTop.y = 1;
+			Point pointRightTop;
+			pointRightTop.x = (previousWidth + fonds[i].width) / (float)oriScreenWidth;
+			pointRightTop.y = 1;
+			Point pointRightBottom;
+			pointRightBottom.x = (previousWidth + fonds[i].width) / (float)oriScreenWidth;
+			pointRightBottom.y = 0;
+			Point pointLeftBottom;
+			pointLeftBottom.x = previousWidth / (float)oriScreenWidth;
+			pointLeftBottom.y = 0;
+
+			previousWidth += fonds[i].width;
+			texurePoints.push_back(pointLeftTop);
+			texurePoints.push_back(pointRightTop);
+			texurePoints.push_back(pointRightBottom);
+			texurePoints.push_back(pointLeftBottom);
+		}
+	}
+	else
+	{
+		for (int i = m_count - 1; i >= 0; i--)
+		{
+			// 左上->右上->右下->左下
+			Point pointLeftTop;
+			pointLeftTop.x = fonds[i].x / (float)widgetWidth;
+			pointLeftTop.y = 1 - (fonds[i].y / (float)(widgetHeight));
+			Point pointRightTop;
+			pointRightTop.x = (fonds[i].x + fonds[i].width) / (float)widgetWidth;
+			pointRightTop.y = 1 - (fonds[i].y / (float)(widgetHeight));
+			Point pointRightBottom;
+			pointRightBottom.x = (fonds[i].x + fonds[i].width) / (float)widgetWidth;
+			pointRightBottom.y = 1 - ((fonds[i].y + fonds[i].height) / (float)(widgetHeight));
+			Point pointLeftBottom;
+			pointLeftBottom.x = fonds[i].x / (float)widgetWidth;
+			pointLeftBottom.y = 1 - ((fonds[i].y + fonds[i].height) / (float)(widgetHeight));
+
+			texurePoints.push_back(pointLeftTop);
+			texurePoints.push_back(pointRightTop);
+			texurePoints.push_back(pointRightBottom);
+			texurePoints.push_back(pointLeftBottom);
+
+		}
+	}
+
+
 }
 
 void VlcPlayerWidget:: Cut_I420(uint8_t* Src, int x, int y, int srcWidth, int srcHeight, uint8_t* Dst, int desWidth, int desHeight)//图片按位置裁剪  

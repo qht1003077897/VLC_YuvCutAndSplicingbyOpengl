@@ -6,6 +6,7 @@
 #include <assert.h>
 #include <thread>
 #include <QMutex>
+#include <vector>
 struct libvlc_media_track_info_t;
 struct libvlc_media_t;
 struct libvlc_instance_t;
@@ -13,6 +14,11 @@ struct libvlc_media_player_t;
 struct libvlc_event_t;
 
 class context;
+struct Point
+{
+	float x = 0.0;
+	float y = 0.0;
+};
 struct DstData
 {
     int dstW = 0;
@@ -84,12 +90,15 @@ private:
     double Video2WidgetRation_H = 0.0;
 	int widgetWidth = 0;
 	int widgetHeight = 0;
+	int oriScreenWidth = 0;
+	int oriScreenHeight = 0;
     std::vector<DstData> dstList;	 // 裁剪好的视频块存放list
 	std::vector<DstData> connectList;
 	uint8_t *m_afterScale = nullptr;
     uint8_t *dstTotal = nullptr;
     void InitShaders();
-    void Cut_I420(uint8_t * Src, int x, int y, int srcWidth, int srcHeight, uint8_t *Dst, int desWidth, int desHeight);
+	void initPoint(std::vector<Point> &vertexPoints, std::vector<Point> &texurePoints);
+	void Cut_I420(uint8_t * Src, int x, int y, int srcWidth, int srcHeight, uint8_t *Dst, int desWidth, int desHeight);
     void connectI420Ver(std::vector<DstData> disList, uint8_t * Dst);
 	void connectI420Hon(std::vector<DstData> &disList, uint8_t * Dst);
 	void initializeArrays(int w, int h,int srcLength);
