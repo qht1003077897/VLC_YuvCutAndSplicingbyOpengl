@@ -71,71 +71,60 @@ void VlcPlayerWidget::initFond()
 		dt.data = nullptr;
 		connectList.push_back(dt);
 	}
-	m_fold.count = 4;
+	m_fold.count = 3;
 	std::vector<Layout> vectors;
 	if (HORIZONTAL == m_fold.orientation)
 	{
 		Layout layout1;
-		layout1.x = 300;
+		layout1.x = 0;
 		layout1.y = 0;
-		layout1.width = 300;
-		layout1.height = 400;
+		layout1.width = 400;
+		layout1.height = 150;
 
 		Layout layout2;
-		layout2.x = 200;
-		layout2.y = 400;
+		layout2.x = 0;
+		layout2.y = 150;
 		layout2.width = 400;
-		layout2.height = 400;
-
-		Layout layout3;
-		layout3.x = 0;
-		layout3.y = 800;
-		layout3.width = 600;
-		layout3.height = 400;
+		layout2.height = 150;
 
 		Layout layoutLast;
 		layoutLast.x = 0;
-		layoutLast.y = 1200;
-		layoutLast.width = 300;
-		layoutLast.height = 400;
+		layoutLast.y = 300;
+		layoutLast.width = 40;
+		layoutLast.height = 150;
 		vectors.push_back(layout1);
 		vectors.push_back(layout2);
-		vectors.push_back(layout3);
 		vectors.push_back(layoutLast);
+		oriScreenWidth = 840; //不包含首行偏移的Y值
+		oriScreenHeight = 150;
 	}
 	else
 	{
 		Layout layout1;
 		layout1.x = 0;
-		layout1.y = 100;
-		layout1.width = 400;
-		layout1.height = 200;
+		layout1.y = 0;
+		layout1.width = 150;
+		layout1.height = 390;
 
 		Layout layout2;
-		layout2.x = 0;
+		layout2.x = 150;
 		layout2.y = 0;
-		layout2.width = 400;
-		layout2.height = 300;
-
-		Layout layout3;
-		layout3.x = 0;
-		layout3.y = 0;
-		layout3.width = 400;
-		layout3.height = 300;
+		layout2.width = 150;
+		layout2.height = 390;
 
 		Layout layoutLast;
-		layoutLast.x = 0;
+		layoutLast.x = 300;
 		layoutLast.y = 0;
-		layoutLast.width = 400;
-		layoutLast.height = 180;
+		layoutLast.width = 150;
+		layoutLast.height = 20;
 		vectors.push_back(layout1);
-		vectors.push_back(layout2);
-		vectors.push_back(layout3);
+		vectors.push_back(layout2);;
 		vectors.push_back(layoutLast);
+		oriScreenWidth = 150; //不包含首行偏移的Y值
+		oriScreenHeight = 800;
 	}
 	m_fold.layoutItemns = vectors;
-	oriScreenWidth = 1800;
-	oriScreenHeight = 400;
+
 }
 VlcPlayerWidget::~VlcPlayerWidget()
 {
@@ -310,6 +299,7 @@ void VlcPlayerWidget::cleanup_cb(void *opaque)
 
 void VlcPlayerWidget::initializeGL()
 {
+
     initializeOpenGLFunctions();
     InitShaders();
 
@@ -393,7 +383,7 @@ void VlcPlayerWidget::paintGL()
 			desW = sourceW;
 			desH = sourceH;
 		}
-
+		glViewport(0, -(widgetHeight - this->height()), widgetWidth, widgetHeight);
 		/*Y*/
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, tex_y);
@@ -832,7 +822,7 @@ void VlcPlayerWidget::initPoint(std::vector<Point> &vertexPoints, std::vector<Po
 	if (HORIZONTAL == m_fold.orientation)
 	{
 		//顶点，横向
-		for (int i = 0; i < m_count; i++)
+		for (int i = m_count - 1; i >= 0; i--)
 		{
 			// 左下->右下->右上->左上
 			Point pointLeftBottom;
@@ -879,31 +869,51 @@ void VlcPlayerWidget::initPoint(std::vector<Point> &vertexPoints, std::vector<Po
 	}
 	else
 	{
+		//顶点，竖向显示
+		for (int i = m_count - 1; i >= 0; i--)
+		{
+			// 左下->右下->右上->左上
+			Point pointLeftBottom;
+			pointLeftBottom.x = (fonds[i].x / ((float)widgetWidth / 2)) - 1;
+			pointLeftBottom.y = (((widgetHeight / 2) - (fonds[i].y + fonds[i].height)) / (float)(widgetHeight / 2));
+			Point pointRightBottom;
+			pointRightBottom.x = ((fonds[i].x + fonds[i].width) / ((float)widgetWidth / 2)) - 1;
+			pointRightBottom.y = (((widgetHeight / 2) - (fonds[i].y + fonds[i].height)) / (float)(widgetHeight / 2));
+			Point pointRightTop;
+			pointRightTop.x = ((fonds[i].x + fonds[i].width) / ((float)widgetWidth / 2)) - 1;
+			pointRightTop.y = 1 - (fonds[i].y / ((float)widgetHeight / 2));
+			Point pointLeftTop;
+			pointLeftTop.x = (fonds[i].x / ((float)widgetWidth / 2)) - 1;
+			pointLeftTop.y = 1 - (fonds[i].y / ((float)widgetHeight / 2));
+			vertexPoints.push_back(pointLeftBottom);
+			vertexPoints.push_back(pointRightBottom);
+			vertexPoints.push_back(pointRightTop);
+			vertexPoints.push_back(pointLeftTop);
+		}
+		//纹理，横向切割原视频
+		int previousHeight = 0;
 		for (int i = m_count - 1; i >= 0; i--)
 		{
 			// 左上->右上->右下->左下
 			Point pointLeftTop;
-			pointLeftTop.x = fonds[i].x / (float)widgetWidth;
-			pointLeftTop.y = 1 - (fonds[i].y / (float)(widgetHeight));
+			pointLeftTop.x = 0;
+			pointLeftTop.y = 1 - (previousHeight / (float)(oriScreenHeight));
 			Point pointRightTop;
-			pointRightTop.x = (fonds[i].x + fonds[i].width) / (float)widgetWidth;
-			pointRightTop.y = 1 - (fonds[i].y / (float)(widgetHeight));
+			pointRightTop.x = 1;
+			pointRightTop.y = 1 - (previousHeight / (float)(oriScreenHeight));
 			Point pointRightBottom;
-			pointRightBottom.x = (fonds[i].x + fonds[i].width) / (float)widgetWidth;
-			pointRightBottom.y = 1 - ((fonds[i].y + fonds[i].height) / (float)(widgetHeight));
+			pointRightBottom.x = 1;
+			pointRightBottom.y = 1 - ((previousHeight + fonds[i].height) / (float)(oriScreenHeight));
 			Point pointLeftBottom;
-			pointLeftBottom.x = fonds[i].x / (float)widgetWidth;
-			pointLeftBottom.y = 1 - ((fonds[i].y + fonds[i].height) / (float)(widgetHeight));
-
+			pointLeftBottom.x = 0;
+			pointLeftBottom.y = 1 - ((previousHeight + fonds[i].height) / (float)(oriScreenHeight));
+			previousHeight += fonds[i].height;
 			texurePoints.push_back(pointLeftTop);
 			texurePoints.push_back(pointRightTop);
 			texurePoints.push_back(pointRightBottom);
 			texurePoints.push_back(pointLeftBottom);
-
 		}
 	}
-
-
 }
 
 void VlcPlayerWidget:: Cut_I420(uint8_t* Src, int x, int y, int srcWidth, int srcHeight, uint8_t* Dst, int desWidth, int desHeight)//图片按位置裁剪  
